@@ -5,7 +5,7 @@ set -o pipefail
 # simulate.sh - Run simulation for project-specific sources.
 #
 # Usage:
-#   ./simulate.sh [--verbose|-v] [--tb testbench_file.v] [--no-viz] path/to/verilog_file.v ...
+#   ./simulate.sh [--verbose|-v] [--tb testbench_file.v] [--no-viz] [path/to/verilog_file.v ...]
 
 # --- Configuration & Logging ---
 RED='\033[0;31m'
@@ -20,7 +20,7 @@ log_success() { echo -e "${GREEN}[$(date +"%T")] SUCCESS:${NC} $1"; }
 log_error()   { echo -e "${RED}[$(date +"%T")] ERROR:${NC} $1" >&2; }
 
 usage() {
-    echo "Usage: $0 [--verbose|-v] [--tb testbench_file.v] [--no-viz] path/to/verilog_file.v ..."
+    echo "Usage: $0 [--verbose|-v] [--tb testbench_file.v] [--no-viz] [path/to/verilog_file.v ...]"
     exit 1
 }
 
@@ -40,10 +40,6 @@ VERBOSE=false
 NO_VIZ=false
 TB_FILE=""
 VERILOG_FILES=()
-
-if [[ $# -eq 0 ]]; then
-    usage
-fi
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -74,33 +70,28 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-if [[ ${#VERILOG_FILES[@]} -eq 0 ]]; then
-    log_error "No Verilog files provided."
-    usage
-fi
-
-# --- Helper: Resolve Absolute Path ---
-get_abs() {
-    (cd "$(dirname "$1")" && echo "$(pwd)/$(basename "$1")")
-}
-
-# --- Convert Provided Verilog Files to Absolute Paths ---
-ABS_VERILOG_FILES=()
-for file in "${VERILOG_FILES[@]}"; do
-    abs_file=$(get_abs "$file")
-    ABS_VERILOG_FILES+=("$abs_file")
-    [ "$VERBOSE" = true ] && log_debug "Resolved: $file -> $abs_file"
-done
-
 # --- Determine Project Directory ---
-SRC_DIR=$(dirname "${ABS_VERILOG_FILES[0]}")
-PROJECT_DIR=$(dirname "$SRC_DIR")
+# Use the location of this script to define the project directory.
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 [ "$VERBOSE" = true ] && log_debug "Project directory determined as: $PROJECT_DIR"
 
-# --- Setup Build and Log Directories ---
-BUILD_DIR="$PROJECT_DIR/build"
-LOG_DIR="$BUILD_DIR/logs"
-mkdir -p "$LOG_DIR"
+# --- Load Verilog Files from files.f if none provided ---
+if [[ ${#VERILOG_FILES[@]} -eq 0 ]]; then
+    FILE_LIST="$PROJECT_DIR/src/files.f"
+    if [[ -f "$FILE_LIST" ]]; then
+        log_info "Loading Verilog sources from: $FILE_LIST"
+        while IFS= read -r line || [ -n "$line" ]; do
+            # Trim leading/trailing whitespace.
+            line="$(echo "$line" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
+            [[ "$line" =~ ^#.*$ || -z "$line" ]] && continue
+            VERILOG_FILES+=("$PROJECT_DIR/$line")
+        done < "$FILE_LIST"
+    else
+        log_error "No Verilog files provided and $FILE_LIST not found."
+        usage
+    fi
+fi
 
 # --- Determine Testbench File ---
 if [ -n "$TB_FILE" ]; then
@@ -113,7 +104,7 @@ if [ -n "$TB_FILE" ]; then
         exit 1
     fi
     log_info "Using specified testbench file: $TESTBENCH_FILE"
-    ABS_VERILOG_FILES+=("$TESTBENCH_FILE")
+    VERILOG_FILES+=("$TESTBENCH_FILE")
 else
     TEST_DIR="$PROJECT_DIR/test"
     if [ -d "$TEST_DIR" ]; then
@@ -128,13 +119,26 @@ else
         else
             TESTBENCH_FILE="$(cd "$(dirname "${TEST_FILES[0]}")" && pwd)/$(basename "${TEST_FILES[0]}")"
             log_info "Using testbench file: $TESTBENCH_FILE"
-            ABS_VERILOG_FILES+=("$TESTBENCH_FILE")
+            VERILOG_FILES+=("$TESTBENCH_FILE")
         fi
     else
         log_error "Test directory $TEST_DIR not found."
         exit 1
     fi
 fi
+
+# --- Resolve Absolute Paths for all Verilog Files ---
+ABS_VERILOG_FILES=()
+for file in "${VERILOG_FILES[@]}"; do
+    abs_file=$(cd "$(dirname "$file")" && echo "$(pwd)/$(basename "$file")")
+    ABS_VERILOG_FILES+=("$abs_file")
+    [ "$VERBOSE" = true ] && log_debug "Resolved: $file -> $abs_file"
+done
+
+# --- Setup Build and Log Directories ---
+BUILD_DIR="$PROJECT_DIR/build"
+LOG_DIR="$BUILD_DIR/logs"
+mkdir -p "$LOG_DIR"
 
 # --- Compile Simulation Sources with Icarus Verilog ---
 SIM_VVP="$BUILD_DIR/sim.vvp"

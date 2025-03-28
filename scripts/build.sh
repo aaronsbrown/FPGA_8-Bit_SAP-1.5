@@ -1,5 +1,5 @@
 #!/bin/bash
-set -e  # Exit on any error
+set -e
 set -o pipefail
 
 # --- Configuration & Logging ---
@@ -7,7 +7,7 @@ RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[0;33m'
 CYAN='\033[0;36m'
-NC='\033[0m'  # No Color
+NC='\033[0m'
 
 log_info()    { echo -e "${CYAN}[$(date +"%T")] INFO:${NC} $1"; }
 log_debug()   { [ "$VERBOSE" = true ] && echo -e "${YELLOW}[$(date +"%T")] DEBUG:${NC} $1"; }
@@ -15,11 +15,11 @@ log_success() { echo -e "${GREEN}[$(date +"%T")] SUCCESS:${NC} $1"; }
 log_error()   { echo -e "${RED}[$(date +"%T")] ERROR:${NC} $1" >&2; }
 
 usage() {
-    echo "Usage: $0 [--verbose|-v] [--with-common] path/to/verilog_file.v ... --top top_module_name [--tb testbench_file.v]"
+    echo "Usage: $0 [--verbose|-v] path/to/verilog_file.v ... --top top_module_name"
     exit 1
 }
 
-# --- Helper function to run commands with optional verbose logging ---
+# --- Command Runner ---
 run_cmd() {
     local log_file="$1"
     shift
@@ -30,25 +30,17 @@ run_cmd() {
     fi
 }
 
-# --- Parse Arguments ---
+# --- Argument Parsing ---
 VERBOSE=false
-WITH_COMMON=false
-TB_FILE=""   # Testbench file (optional, for simulation only)
 VERILOG_FILES=()
 TOP_MODULE=""
 
-if [[ $# -eq 0 ]]; then
-    usage
-fi
+if [[ $# -eq 0 ]]; then usage; fi
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --verbose|-v)
             VERBOSE=true
-            shift
-            ;;
-        --with-common)
-            WITH_COMMON=true
             shift
             ;;
         --top)
@@ -57,14 +49,6 @@ while [[ $# -gt 0 ]]; do
                 usage
             fi
             TOP_MODULE="$2"
-            shift 2
-            ;;
-        --tb)
-            if [[ -z "$2" ]]; then
-                log_error "--tb flag requires a testbench file."
-                usage
-            fi
-            TB_FILE="$2"
             shift 2
             ;;
         -*)
@@ -78,9 +62,27 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
+# --- Determine Project Directory ---
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+[ "$VERBOSE" = true ] && log_debug "Project directory: $PROJECT_DIR"
+
+# --- Load Verilog Files ---
 if [[ ${#VERILOG_FILES[@]} -eq 0 ]]; then
-    log_error "No Verilog files provided."
-    usage
+    FILE_LIST="$PROJECT_DIR/src/files.f"
+    if [[ -f "$FILE_LIST" ]]; then
+        log_info "Loading Verilog sources from: $FILE_LIST"
+        # Read each line, trim whitespace, and add if not empty/comment.
+        while IFS= read -r line || [ -n "$line" ]; do
+            # Remove leading and trailing whitespace
+            line="$(echo "$line" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
+            [[ "$line" =~ ^#.*$ || -z "$line" ]] && continue
+            VERILOG_FILES+=("$PROJECT_DIR/$line")
+        done < "$FILE_LIST"
+    else
+        log_error "No Verilog files provided and $FILE_LIST not found."
+        usage
+    fi
 fi
 
 if [[ -z "$TOP_MODULE" ]]; then
@@ -88,12 +90,11 @@ if [[ -z "$TOP_MODULE" ]]; then
     usage
 fi
 
-# --- Helper Function: Resolve Absolute Paths ---
+# --- Resolve Absolute Paths ---
 get_abs() {
     (cd "$(dirname "$1")" && echo "$(pwd)/$(basename "$1")")
 }
 
-# --- Convert Provided Verilog Files to Absolute Paths ---
 ABS_VERILOG_FILES=()
 for file in "${VERILOG_FILES[@]}"; do
     abs_file=$(get_abs "$file")
@@ -101,113 +102,55 @@ for file in "${VERILOG_FILES[@]}"; do
     [ "$VERBOSE" = true ] && log_debug "Resolved: $file -> $abs_file"
 done
 
-# --- Determine Project Directory ---
-# We assume the provided Verilog file is in the project's "src" directory.
-# Therefore, the project directory is one level up from the src folder.
-SRC_DIR=$(dirname "${ABS_VERILOG_FILES[0]}")
-PROJECT_DIR=$(dirname "$SRC_DIR")
-[ "$VERBOSE" = true ] && log_debug "Project directory determined as: $PROJECT_DIR"
-
-# --- Setup Build and Log Directories ---
 BUILD_DIR="$PROJECT_DIR/build"
 LOG_DIR="$BUILD_DIR/logs"
 mkdir -p "$LOG_DIR"
 
-# --- Optionally Include Common Modules ---
-if [ "$WITH_COMMON" = true ]; then
-    COMMON_MODULES_DIR="$(cd "$PROJECT_DIR/../../../common/modules" && pwd)"
-    if [ -d "$COMMON_MODULES_DIR" ]; then
-        log_info "Searching for common modules in $COMMON_MODULES_DIR..."
-        COMMON_MODULE_FILES=($(find "$COMMON_MODULES_DIR" -maxdepth 1 \( -type f -o -type l \) -name "*.v" 2>/dev/null))
-        if [ ${#COMMON_MODULE_FILES[@]} -gt 0 ]; then
-            for file in "${COMMON_MODULE_FILES[@]}"; do
-                abs_file="$(get_abs "$file")"
-                ABS_VERILOG_FILES+=("$abs_file")
-                [ "$VERBOSE" = true ] && log_debug "Added common module: $abs_file"
-            done
-        else
-            log_info "No common module files found in $COMMON_MODULES_DIR."
-        fi
-    else
-        log_error "Common modules directory $COMMON_MODULES_DIR does not exist."
-    fi
-else
-    log_info "Skipping inclusion of common modules (use --with-common to include them)."
-fi
-
-# --- Merge Constraint Files ---
-# Project-specific constraints are in PROJECT_DIR/constraints.
-# Common constraints are located at ../../common/constraints relative to the project directory.
+# --- Constraints ---
 PROJECT_CONSTRAINT_DIR="$PROJECT_DIR/constraints"
-COMMON_CONSTRAINT_DIR="$(cd "$PROJECT_DIR/../../../common/constraints" && pwd)"
 MERGED_PCF="$BUILD_DIR/merged_constraints.pcf"
-
-COMMON_PCF_FILES=( $(find "$COMMON_CONSTRAINT_DIR" -maxdepth 1 -type f -name "*.pcf" 2>/dev/null) )
 PROJECT_PCF_FILES=( $(find "$PROJECT_CONSTRAINT_DIR" -maxdepth 1 -type f -name "*.pcf" 2>/dev/null) )
 
-if [[ ${#COMMON_PCF_FILES[@]} -eq 0 && ${#PROJECT_PCF_FILES[@]} -eq 0 ]]; then
-    log_error "No constraint files found in either common or project directories."
+if [[ ${#PROJECT_PCF_FILES[@]} -eq 0 ]]; then
+    log_error "No constraint files found in $PROJECT_CONSTRAINT_DIR"
     exit 1
 fi
 
 log_info "Merging constraint files..."
-> "$MERGED_PCF"  # Create or empty the merged file
-# Append common constraints first.
-for file in "${COMMON_PCF_FILES[@]}"; do
-    cat "$file" >> "$MERGED_PCF"
-    echo "" >> "$MERGED_PCF"
-done
-# Append project-specific constraints.
+> "$MERGED_PCF"
 for file in "${PROJECT_PCF_FILES[@]}"; do
     cat "$file" >> "$MERGED_PCF"
     echo "" >> "$MERGED_PCF"
 done
 log_info "Merged constraints saved to: $MERGED_PCF"
 
-# --- FPGA Build Flow ---
-# Define Output Files
+# --- Output Files ---
 YOSYS_JSON="$BUILD_DIR/hardware.json"
 NEXTPNR_ASC="$BUILD_DIR/hardware.asc"
 ICEPACK_BIN="$BUILD_DIR/hardware.bin"
 
-# --- Step 1: Synthesis with Yosys ---
+# --- Yosys ---
 log_info "Running Yosys synthesis..."
 YOSYS_CMD=(yosys -q -p "synth_ice40 -top $TOP_MODULE -json $YOSYS_JSON" "${ABS_VERILOG_FILES[@]}")
 [ "$VERBOSE" = true ] && log_debug "Yosys command: ${YOSYS_CMD[*]}"
-if run_cmd "$LOG_DIR/yosys.log" "${YOSYS_CMD[@]}"; then
-    log_success "Yosys synthesis completed."
-else
-    log_error "Yosys synthesis failed. Check $LOG_DIR/yosys.log for details."
-    exit 1
-fi
+run_cmd "$LOG_DIR/yosys.log" "${YOSYS_CMD[@]}"
+log_success "Yosys synthesis completed."
 
-# --- Step 2: Place & Route with nextpnr-ice40 ---
+# --- nextpnr ---
 log_info "Running nextpnr-ice40..."
 NEXTPNR_CMD=(nextpnr-ice40 --hx8k --package cb132 --json "$YOSYS_JSON" --asc "$NEXTPNR_ASC" --pcf "$MERGED_PCF")
 [ "$VERBOSE" = true ] && log_debug "nextpnr-ice40 command: ${NEXTPNR_CMD[*]}"
-if run_cmd "$LOG_DIR/nextpnr.log" "${NEXTPNR_CMD[@]}"; then
-    log_success "nextpnr-ice40 completed."
-else
-    log_error "nextpnr-ice40 failed. Check $LOG_DIR/nextpnr.log for details."
-    exit 1
-fi
+run_cmd "$LOG_DIR/nextpnr.log" "${NEXTPNR_CMD[@]}"
+log_success "nextpnr-ice40 completed."
 
-# --- Step 3: Bitstream Packing ---
+# --- icepack ---
 log_info "Packing bitstream with icepack..."
-if run_cmd "$LOG_DIR/icepack.log" icepack "$NEXTPNR_ASC" "$ICEPACK_BIN"; then
-    log_success "Bitstream packed successfully."
-else
-    log_error "icepack failed. Check $LOG_DIR/icepack.log for details."
-    exit 1
-fi
+run_cmd "$LOG_DIR/icepack.log" icepack "$NEXTPNR_ASC" "$ICEPACK_BIN"
+log_success "Bitstream packed successfully."
 
-# --- Step 4: Upload to FPGA ---
+# --- Upload ---
 log_info "Uploading bitstream to FPGA with iceprog..."
-if run_cmd "$LOG_DIR/iceprog.log" iceprog "$ICEPACK_BIN"; then
-    log_success "Bitstream uploaded successfully."
-else
-    log_error "iceprog failed. Check $LOG_DIR/iceprog.log for details."
-    exit 1
-fi
+run_cmd "$LOG_DIR/iceprog.log" iceprog "$ICEPACK_BIN"
+log_success "Bitstream uploaded successfully."
 
 log_success "Build & upload complete!"
