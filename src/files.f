@@ -1,4 +1,5 @@
 # src/files.f
 
-src/eight_bit_fpga.v
+src/register_nbit.v
+src/computer.v
 src/top.v
