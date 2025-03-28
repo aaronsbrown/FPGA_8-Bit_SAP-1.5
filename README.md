@@ -54,6 +54,7 @@ To run a simulation:
 ```bash
 ./scripts/simulate.sh --no-viz src/8bit_fpga.v
 ./scripts/simulate.sh src/8bit_fpga.v
+```
 
 🧪 Test Strategy
 
