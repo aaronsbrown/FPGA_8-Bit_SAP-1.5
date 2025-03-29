@@ -5,19 +5,20 @@ module computer (
 );
     
     
-    reg [2:0] state;
-    localparam STATE_0 = 3'b000,
-        STATE_1 = 3'b001,
-        STATE_2 = 3'b010,
-        STATE_3 = 3'b011;
+    reg [2:0] microstep;
+    localparam  T0_FETCH = 3'b000,
+                T1_DECODE = 3'b001,
+                T2_EXECUTE = 3'b010,
+                T3_WAIT = 3'b011;
     
     // Shared bus for data transfer
     reg [7:0] bus;
     
     // Simple Registers & control signals
-    wire [7:0] a_out, b_out, temp_out;
-    reg load_a, load_b, load_temp;
-    reg enable_a, enable_b, enable_temp;
+    wire [7:0] a_out, b_out, ir_out, temp_out;
+    wire [3:0] opcode, operand;
+    reg load_a, load_b, load_ir, load_temp;
+    reg enable_a, enable_b, enable_ir, enable_temp;
 
     register_nbit #( .N(8) ) u_register_temp (
         .clk(clk),
@@ -43,44 +44,73 @@ module computer (
         .latched_data(b_out)
     );
 
+    
+    register_instruction u_register_instr (
+        .clk(clk),
+        .reset(reset),
+        .load(load_ir),
+        .data_in(bus),
+        .opcode(opcode),
+        .operand(operand)
+    );
+    
     assign bus = (enable_temp) ? temp_out :
+                  (enable_ir) ? operand :
                   (enable_a) ? a_out : 
                   (enable_b) ? b_out : 
                   8'b0;
     
     assign out_val = bus;
     
-    always @(posedge clk or posedge reset) begin
+    always @(posedge clk) begin
         if (reset) begin
-            state <= STATE_0;
+            microstep <= T0_FETCH;
             
             load_a <= 0;
             load_b <= 0;
+            load_ir <= 0;
             load_temp <= 0;
             
             enable_a <= 0;
             enable_b <= 0;
+            enable_ir <= 0;
             enable_temp <= 0;
+
         end else begin
-            case (state)
-                STATE_0: begin
+            case (microstep)
+                
+                T0_FETCH: begin
                     enable_temp <= 1;
-                    load_a <= 1;
-                    state <= STATE_1;
+                    load_ir <= 1;
+                    microstep <= T1_DECODE;
                 end
-                STATE_1: begin
+                
+                T1_DECODE: begin
+                    
                     enable_temp <= 0;
+                    load_ir <= 0;
+
+                    enable_ir <= 1;
+                    case (opcode)
+                        4'b0001: begin
+                            load_a <= 1;
+                            microstep <= T2_EXECUTE;
+                        end
+                    endcase
+                    
+                end
+                
+                T2_EXECUTE: begin 
                     load_a <= 0;
-                    state <= STATE_2;
-                end
-                STATE_2: begin 
                     enable_a <= 1;
-                    state <= STATE_3;
+                    microstep <= T3_WAIT;
                 end
-                STATE_3: begin 
-                    state <= STATE_0;
+                
+                T3_WAIT: begin 
+                   // noop
                 end
-                default: state <= STATE_0;
+                
+                default: microstep <= T0_FETCH;
             endcase
         end
     end
@@ -107,13 +137,6 @@ module computer (
     //     .flag_zero(flag_zero)
     // );
 
-    // instruction_register u_ir_reg (
-    //     .clk(clk),
-    //     .reset(reset),
-    //     .load(load_ir),
-    //     .data_in(bus),
-    //     .data_out(instruction)
-    // );
     // program_counter u_pc (
     //     .clk(clk),
     //     .reset(reset),
@@ -156,7 +179,5 @@ module computer (
     //     // .alu_op(alu_op)
     // );
 
-    // Bus logic (TBD): multiplexer / tri-state-style selectors between bus and internal outputs
-    // TODO: Add bus arbitration logic
 
 endmodule
