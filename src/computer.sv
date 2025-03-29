@@ -11,14 +11,23 @@ module computer (
                 T2_EXECUTE = 3'b010,
                 T3_WAIT = 3'b011;
     
+    // Microcode
+    logic [3:0] opcode, operand;
+    
+    // Control signals => program counter
+    logic pc_enable, pc_load;
+    
+    
+    // Register output storage (simulates bus-transciever )
+    logic [7:0] a_out, b_out, ir_out, counter_out, memory_address_out, temp_out, ram_out;
+    
     // Shared bus for data transfer
     logic [7:0] bus;
     
-    // Simple Registers & control signals
-    logic pc_enable, pc_load;
-    logic [7:0] a_out, b_out, ir_out, counter_out, temp_out, ram_out;
-    logic [3:0] opcode, operand;
-    logic load_a, load_b, load_ir, load_pc, load_temp, ram_we;
+    // Control signals => load from bus
+    logic load_a, load_b, load_ir, load_pc, load_temp, ram_we, load_memory_address;
+    
+    // Control signals => output to bus
     logic oe_a, oe_b, oe_ir, oe_pc, oe_temp, oe_ram;
     
     program_counter #( .ADDR_WIDTH(4) ) u_program_counter (
@@ -54,7 +63,14 @@ module computer (
         .latched_data(b_out)
     );
 
-    
+    register_nbit #( .N(4) ) u_register_memory_address (
+        .clk(clk),
+        .reset(reset),
+        .load(load_memory_address),
+        .data_in(bus),
+        .latched_data(memory_address_out)
+    );
+
     register_instruction u_register_instr (
         .clk(clk),
         .reset(reset),
@@ -68,7 +84,7 @@ module computer (
         .clk(clk),
         .we(ram_we),
         .oe(oe_ram),
-        .address(operand),  // TODO replace this with MAR
+        .address(memory_address_out),  
         .data_in(bus),
         .data_out(ram_out)
     );
@@ -135,8 +151,6 @@ module computer (
             endcase
         end
     end
-
-
     
     // output_register u_out_reg (
     //     .clk(clk),
@@ -157,18 +171,6 @@ module computer (
     //     .flag_carry(flag_carry),
     //     .flag_zero(flag_zero)
     // );
-
-  
-
-    // memory_address_register u_mar_reg (
-    //     .clk(clk),
-    //     .reset(reset),
-    //     .load(load_mar),
-    //     .data_in(bus),
-    //     .data_out(mar_out)
-    // );
-
-   
 
     // control_unit u_control_unit (
     //     .clk(clk),
