@@ -33,6 +33,7 @@ run_cmd() {
 # --- Argument Parsing ---
 VERBOSE=false
 VERILOG_FILES=()
+USE_SV2V=false
 TOP_MODULE=""
 
 if [[ $# -eq 0 ]]; then usage; fi
@@ -41,6 +42,10 @@ while [[ $# -gt 0 ]]; do
     case "$1" in
         --verbose|-v)
             VERBOSE=true
+            shift
+            ;;
+        --sv2v)
+            USE_SV2V=true
             shift
             ;;
         --top)
@@ -106,6 +111,25 @@ BUILD_DIR="$PROJECT_DIR/build"
 LOG_DIR="$BUILD_DIR/logs"
 mkdir -p "$LOG_DIR"
 
+# --- Optional sv2v Conversion ---
+FINAL_VERILOG_FILES=()
+if [ "$USE_SV2V" = true ]; then
+    log_info "sv2v conversion enabled. Converting SystemVerilog files..."
+    for file in "${ABS_VERILOG_FILES[@]}"; do
+        if [[ "$file" == *.sv ]]; then
+            base=$(basename "$file" .sv)
+            converted_file="$BUILD_DIR/${base}.v"
+            log_info "Converting $file to $converted_file"
+            sv2v "$file" > "$converted_file"
+            FINAL_VERILOG_FILES+=("$converted_file")
+        else
+            FINAL_VERILOG_FILES+=("$file")
+        fi
+    done
+else
+    FINAL_VERILOG_FILES=("${ABS_VERILOG_FILES[@]}")
+fi
+
 # --- Constraints ---
 PROJECT_CONSTRAINT_DIR="$PROJECT_DIR/constraints"
 MERGED_PCF="$BUILD_DIR/merged_constraints.pcf"
@@ -131,7 +155,9 @@ ICEPACK_BIN="$BUILD_DIR/hardware.bin"
 
 # --- Yosys ---
 log_info "Running Yosys synthesis..."
-YOSYS_CMD=(yosys -q -p "synth_ice40 -top $TOP_MODULE -json $YOSYS_JSON" "${ABS_VERILOG_FILES[@]}")
+
+YOSYS_CMD=(yosys -q -p "synth_ice40 -top $TOP_MODULE -json $YOSYS_JSON" "${FINAL_VERILOG_FILES[@]}")
+
 [ "$VERBOSE" = true ] && log_debug "Yosys command: ${YOSYS_CMD[*]}"
 run_cmd "$LOG_DIR/yosys.log" "${YOSYS_CMD[@]}"
 log_success "Yosys synthesis completed."

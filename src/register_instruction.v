@@ -7,7 +7,7 @@ module register_instruction (
     output  reg [3:0] operand
 );
 
-    always @(posedge clk or posedge reset) begin
+    always @(posedge clk) begin
         if (reset) begin
             opcode <= 0;
             operand <= 0;
@@ -18,3 +18,5 @@ module register_instruction (
     end
 
 endmodule
+
+

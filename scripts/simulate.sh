@@ -39,6 +39,7 @@ run_cmd() {
 VERBOSE=false
 NO_VIZ=false
 TB_FILE=""
+USE_SV2V=false
 VERILOG_FILES=()
 
 while [[ $# -gt 0 ]]; do
@@ -47,6 +48,10 @@ while [[ $# -gt 0 ]]; do
             VERBOSE=true
             shift
             ;;
+        --sv2v)
+            USE_SV2V=true
+            shift
+            ;;    
         --no-viz)
             NO_VIZ=true
             shift
@@ -139,11 +144,30 @@ BUILD_DIR="$PROJECT_DIR/build"
 LOG_DIR="$BUILD_DIR/logs"
 mkdir -p "$LOG_DIR"
 
+# --- Optional sv2v Conversion ---
+FINAL_VERILOG_FILES=()
+if [ "$USE_SV2V" = true ]; then
+    log_info "sv2v conversion enabled. Converting SystemVerilog files..."
+    for file in "${ABS_VERILOG_FILES[@]}"; do
+        if [[ "$file" == *.sv ]]; then
+            base=$(basename "$file" .sv)
+            converted_file="$BUILD_DIR/${base}.v"
+            log_info "Converting $file to $converted_file"
+            sv2v "$file" > "$converted_file"
+            FINAL_VERILOG_FILES+=("$converted_file")
+        else
+            FINAL_VERILOG_FILES+=("$file")
+        fi
+    done
+else
+    FINAL_VERILOG_FILES=("${ABS_VERILOG_FILES[@]}")
+fi
+
 # --- Compile Simulation Sources with Icarus Verilog ---
 SIM_VVP="$BUILD_DIR/sim.vvp"
 log_info "Compiling simulation sources..."
 # Add the test directory to the include path (-I option) so that test_utilities.sv can be found.
-IVERILOG_CMD=(iverilog -g2012 -I "$PROJECT_DIR/test" -o "$SIM_VVP" "${ABS_VERILOG_FILES[@]}")
+IVERILOG_CMD=(iverilog -g2012 -I "$PROJECT_DIR/test" -o "$SIM_VVP" "${FINAL_VERILOG_FILES[@]}")
 [ "$VERBOSE" = true ] && log_debug "Iverilog command: ${IVERILOG_CMD[*]}"
 if run_cmd "$LOG_DIR/iverilog.log" "${IVERILOG_CMD[@]}"; then
     log_success "Iverilog compilation completed."

@@ -1,6 +1,11 @@
-# src/files.f
+# src/files.f 
 
-src/register_instruction.v
+# utilities
+src/timescale.v 
+
+# logic
+src/ram.v
+src/register_instruction.sv
 src/register_nbit.v
 src/computer.v
 src/top.v

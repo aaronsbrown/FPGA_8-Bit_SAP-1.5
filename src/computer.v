@@ -12,13 +12,15 @@ module computer (
                 T3_WAIT = 3'b011;
     
     // Shared bus for data transfer
-    reg [7:0] bus;
+    wire [7:0] bus;
     
     // Simple Registers & control signals
-    wire [7:0] a_out, b_out, ir_out, temp_out;
+    wire [7:0] a_out, b_out, ir_out, temp_out, ram_out;
     wire [3:0] opcode, operand;
-    reg load_a, load_b, load_ir, load_temp;
-    reg enable_a, enable_b, enable_ir, enable_temp;
+    reg load_a, load_b, load_ir, load_temp, ram_we;
+    reg enable_a, enable_b, enable_ir, enable_temp, ram_oe;
+    
+    
 
     register_nbit #( .N(8) ) u_register_temp (
         .clk(clk),
@@ -54,11 +56,21 @@ module computer (
         .operand(operand)
     );
     
-    assign bus = (enable_temp) ? temp_out :
-                  (enable_ir) ? operand :
-                  (enable_a) ? a_out : 
-                  (enable_b) ? b_out : 
-                  8'b0;
+    ram u_ram (
+        .clk(clk),
+        .we(ram_we),
+        .oe(ram_oe),
+        .address(operand),  // TODO replace this with MAR
+        .data_in(bus),
+        .data_out(ram_out)
+    );
+
+    assign bus =    (enable_temp)   ? temp_out :
+                    (ram_oe)        ? ram_out :
+                    (enable_ir)     ? operand :
+                    (enable_a)      ? a_out : 
+                    (enable_b)      ? b_out : 
+                    8'b0;
     
     assign out_val = bus;
     

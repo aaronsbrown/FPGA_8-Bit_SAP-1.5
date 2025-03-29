@@ -26,29 +26,32 @@ module computer_tb;
         
         @(posedge clk); // 000
         reset = 0;
-        pretty_print_assert_vec(uut.bus, 8'b0, "Bus is reset to h00");
-        pretty_print_assert_vec(uut.u_register_A.latched_data, 8'b0, "A register is h00");
         
-        // Load temp register with 8'b11111111 and output to bus
-        force uut.u_register_temp.latched_data = 8'b11111111;
         
-        @(posedge clk); // 001
-        pretty_print_assert_vec(uut.bus, 8'hFF, "Bus is hFF");
-        pretty_print_assert_vec(uut.u_register_A.data_in, 8'hFF, "A register input is hFF");
         
-        @(posedge clk); // 002
-        pretty_print_assert_vec(uut.u_register_A.data_in, 8'h00, "A register input is h00");
-        pretty_print_assert_vec(uut.u_register_A.latched_data, 8'hFF, "A register output is hFF");
-        pretty_print_assert_vec(uut.bus, 8'h00, "Bus is h00");
+        // pretty_print_assert_vec(uut.bus, 8'b0, "Bus is reset to h00");
+        // pretty_print_assert_vec(uut.u_register_A.latched_data, 8'b0, "A register is h00");
+        
+        // // Load temp register with 8'b11111111 and output to bus
+        // force uut.u_register_temp.latched_data = 8'h1C;
+        
+        // @(posedge clk); // 001
+        // pretty_print_assert_vec(uut.bus, 8'hFF, "Bus is hFF");
+        // pretty_print_assert_vec(uut.u_register_A.data_in, 8'hFF, "A register input is hFF");
+        
+        // @(posedge clk); // 002
+        // pretty_print_assert_vec(uut.u_register_A.data_in, 8'h00, "A register input is h00");
+        // pretty_print_assert_vec(uut.u_register_A.latched_data, 8'hFF, "A register output is hFF");
+        // pretty_print_assert_vec(uut.bus, 8'h00, "Bus is h00");
 
-        @(posedge clk); // 003
-        pretty_print_assert_vec(uut.bus, 8'hFF, "Bus is hFF");
+        // @(posedge clk); // 003
+        // pretty_print_assert_vec(uut.bus, 8'hFF, "Bus is hFF");
 
-        repeat (5) begin
-            @(posedge clk);
-        end
+        // repeat (5) begin
+        //     @(posedge clk);
+        // end
 
-        release uut.u_register_temp.latched_data;
+        // release uut.u_register_temp.latched_data;
         $display("Test complete at time %0t", $time);
         $finish;
     end

@@ -8,7 +8,7 @@ module register_nbit #(
     output  reg [N-1:0] latched_data
 );
 
-    always @(posedge clk or posedge reset) begin
+    always @(posedge clk) begin
         if (reset) begin
             latched_data <= 0;
         end else if (load) begin
