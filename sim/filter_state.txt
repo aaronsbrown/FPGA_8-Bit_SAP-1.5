@@ -1,0 +1,10 @@
+translate current_state {
+    000 RESET
+    001 FETCH0
+    010 FETCH1
+    011 DECODE0
+    100 DECODE1
+    101 EXECUTE
+    110 WAIT
+    111 HALT
+}

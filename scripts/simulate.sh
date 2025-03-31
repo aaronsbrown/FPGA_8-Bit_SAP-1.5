@@ -193,10 +193,11 @@ popd > /dev/null
 
 # --- Optionally Open Waveform in gtkwave ---
 WAVEFORM="$BUILD_DIR/waveform.vcd"
+SESSION_FILE="sim/8-bit-baseline.gtkw"
 if [ -f "$WAVEFORM" ]; then
     if [ "$NO_VIZ" = false ]; then
         log_info "Opening waveform in gtkwave..."
-        gtkwave "$WAVEFORM" &
+        gtkwave "$WAVEFORM" "$SESSION_FILE" &
     else
         log_info "Waveform generated, skipping visualization (--no-viz)."
     fi

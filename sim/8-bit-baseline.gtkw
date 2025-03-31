@@ -1,0 +1,32 @@
+[*]
+[*] GTKWave Analyzer v3.4.0 (w)1999-2022 BSI
+[*] Mon Mar 31 23:44:24 2025
+[*]
+[dumpfile] "/Users/aaronbrown/Documents/Code/2_Ben_Eater_FPGA/build/waveform.vcd"
+[dumpfile_mtime] "Mon Mar 31 23:41:54 2025"
+[dumpfile_size] 6428
+[savefile] "/Users/aaronbrown/Documents/Code/2_Ben_Eater_FPGA/sim/8-bit-baseline.gtkw"
+[timestart] 0
+[size] 1336 600
+[pos] -1 -1
+*-15.758382 -1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+[treeopen] computer_tb.
+[sst_width] 255
+[signals_width] 177
+[sst_expanded] 1
+[sst_vpaned_height] 159
+@28
+computer_tb.uut.clk
+@22
+computer_tb.uut.counter_out[3:0]
+@2028
+^1 /Users/aaronbrown/Documents/Code/2_Ben_Eater_FPGA/sim/filter_state.txt
+computer_tb.uut.current_state[2:0]
+^2 /Users/aaronbrown/Documents/Code/2_Ben_Eater_FPGA/sim/filter_timestep.txt
+computer_tb.uut.current_step[3:0]
+^3 /Users/aaronbrown/Documents/Code/2_Ben_Eater_FPGA/sim/filter_opcode.txt
+computer_tb.uut.opcode[3:0]
+@23
+computer_tb.uut.bus[7:0]
+[pattern_trace] 1
+[pattern_trace] 0

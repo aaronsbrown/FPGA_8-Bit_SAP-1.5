@@ -1,0 +1,10 @@
+translate current_step {
+    0000 MS0
+    0001 MS1
+    0010 MS2
+    0011 MS3
+    0100 MS4
+    0101 MS5
+    0110 MS6
+    0111 MS7
+}

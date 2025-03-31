@@ -1,0 +1,8 @@
+translate opcode {
+    0000 NOP
+    0001 LDA
+    0010 LDB
+    0011 ADD
+    1110 OUTA
+    1111 HLT
+}
