@@ -168,6 +168,9 @@ SIM_VVP="$BUILD_DIR/sim.vvp"
 log_info "Compiling simulation sources..."
 # Add the test directory to the include path (-I option) so that test_utilities.sv can be found.
 IVERILOG_CMD=(iverilog -g2012 -I "$PROJECT_DIR/test" -o "$SIM_VVP" "${FINAL_VERILOG_FILES[@]}")
+
+cp "$PROJECT_DIR/fixture/program.hex" "$BUILD_DIR/program.hex"
+
 [ "$VERBOSE" = true ] && log_debug "Iverilog command: ${IVERILOG_CMD[*]}"
 if run_cmd "$LOG_DIR/iverilog.log" "${IVERILOG_CMD[@]}"; then
     log_success "Iverilog compilation completed."

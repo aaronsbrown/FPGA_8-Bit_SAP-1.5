@@ -21,9 +21,13 @@ always @(posedge clk) begin
     end
 end
 
+
+integer i;
 initial begin
-    ram[0] = 8'b00011111; // LDA Mem[15]
-    ram[15] = 8'b01010101; // 55
+  $display("Initializing RAM from program.hex");
+  $readmemh("program.hex", ram);
+  for (i = 0; i < 16; i = i + 1)
+    $display("RAM[%0d] = %02h", i, ram[i]);
 end
 
 endmodule
