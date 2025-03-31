@@ -28,16 +28,19 @@ module computer_tb;
         reset = 0;
         
 
-        repeat (10) begin
+        repeat (12) begin
             @(posedge clk);
         end
         pretty_print_assert_vec(uut.u_register_A.latched_data, 8'h44, "A Reg is 0x44");
 
-        repeat (10) begin
+        repeat (12) begin
             @(posedge clk);
         end
         pretty_print_assert_vec(uut.u_register_B.latched_data, 8'h22, "B Reg is 0x22");
 
+repeat (20) begin
+            @(posedge clk);
+        end
 
         $display("Test complete at time %0t", $time);
         $finish;

@@ -7,18 +7,19 @@ typedef enum logic [3:0] {
         HLT = 4'b1111
 } opcode_t;
     
+typedef enum logic [2:0] {
+    S_RESET,
+    S_FETCH_0,
+    S_FETCH_1,
+    S_DECODE_0,
+    S_DECODE_1,
+    S_EXECUTE,
+    S_WAIT,
+    S_HALT
+} fsm_state_t;
+
 typedef enum logic [3:0] {
-    T0 = 4'b0000,
-    T1 = 4'b0001,
-    T2 = 4'b0010,
-    T3 = 4'b0011,
-    T4 = 4'b0100,
-    T5 = 4'b0101,
-    T6 = 4'b0110,
-    T7 = 4'b0111,
-    T8 = 4'b1000,
-    T_RESET = 4'b1110,
-    T_HLT = 4'b1111
+    MS0, MS1, MS2, MS3, MS4, MS5, MS6, MS7
 } microstep_t;
 
 typedef struct packed {

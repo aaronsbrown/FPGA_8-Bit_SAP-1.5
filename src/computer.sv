@@ -104,21 +104,26 @@ module computer (
     
     assign out_val = bus; // Output the value on the bus
     
-    microstep_t current_step = T_RESET; // Current microstep in execution
-    microstep_t next_step = T_RESET; // Next microstep to transition to
+    fsm_state_t current_state = S_RESET; // Current microstep in execution
+    fsm_state_t next_state = S_RESET; // Next microstep to transition to
+    microstep_t current_step; // Current microstep in execution
+    microstep_t next_step; // Next microstep to transition to
 
     // Sequential logic for controlling the CPU's operation based on clock and reset signals
     always_ff @(posedge clk or posedge reset) begin // ADD posedge reset
         if (reset) begin // ASYNC check
-            current_step <= T_RESET; // Reset to initial state
+            current_state <= S_RESET; // Reset to initial state
+            current_step <= MS0; // Reset to initial step
             control_word <= '{default: 0}; // Clear control word
         end else begin // Normal clocked operation
             // Handle halt logic; may require adjustment for synchronous/asynchronous intent
             if (halt) begin
-                current_step <= T_HLT; // Transition to halt state
+                current_state <= S_HALT; // Transition to halt state
+                current_step <= MS0; // Reset step
                 control_word <= '{default: 0}; // Clear control word
             end else begin
-                current_step <= next_step; // Update to next step
+                current_state <= next_state; // Update to next step
+                current_step <= next_step; // Update to next microstep
                 control_word <= next_control_word; // Update control word
             end
         end
@@ -126,56 +131,48 @@ module computer (
 
     // Combinational logic to determine the next state and control word based on the current step
     always_comb begin 
+        next_state = current_state; // Initialize next state to current state
         next_step = current_step; // Initialize next step to current step
         next_control_word = '{default: 0}; // Clear next control word
 
-        case (current_step)
-            T_RESET: begin
-                next_step = T0; // Transition to first microstep
+        case (current_state)
+            S_RESET: begin
+                next_state = S_FETCH_0; // Transition to fetch state
             end
-            T0: begin
+            S_FETCH_0: begin
                 next_control_word = '{default: 0, oe_pc: 1}; // Enable program counter output
-                next_step = T1; // Move to next step
+                next_state = S_FETCH_1; // Move to next state
             end
-            T1: begin
+            S_FETCH_1: begin
                 next_control_word = '{default: 0, oe_pc: 1, load_mar: 1}; // Load memory address register
-                next_step = T2; // Move to next step
+                next_state = S_DECODE_0; // Move to next state
             end
-            T2: begin
+            S_DECODE_0: begin
                 next_control_word = '{default: 0, oe_ram: 1}; // Enable RAM output
-                next_step = T3; // Move to next step
+                next_state = S_DECODE_1; // Move to next step
             end
-            T3: begin
+            S_DECODE_1: begin
                 next_control_word = '{default: 0, oe_ram: 1, load_ir: 1, pc_enable: 1}; // Load instruction and enable PC
-                next_step = T4; // Move to next step
+                next_state = S_EXECUTE; // Move to next step
             end
-            // Microsteps for executing instructions
-            T4: begin
-                next_control_word = microcode_rom[opcode][T4]; // Fetch control word from microcode ROM
-                next_step = T5; // Move to next step
+            
+            S_EXECUTE: begin
+                next_control_word = microcode_rom[opcode][current_step]; // Fetch control word from microcode ROM
+                if (current_step == MS7) begin
+                    next_step = MS0; // Reset microstep
+                    next_state = S_FETCH_0; 
+                end else begin
+                    next_step = current_step + 1; // Increment microstep
+                end
             end
-            T5: begin
-                next_control_word = microcode_rom[opcode][T5]; // Fetch control word from microcode ROM
-                next_step = T6; // Move to next step
-            end
-            T6: begin
-                next_control_word = microcode_rom[opcode][T6]; // Fetch control word from microcode ROM
-                next_step = T7; // Move to next step
-            end
-            T7: begin
-                next_control_word = microcode_rom[opcode][T7]; // Fetch control word from microcode ROM
-                next_step = T8; // Move to next step
-            end
-            T8: begin
-                next_control_word = microcode_rom[opcode][T8]; // Fetch control word from microcode ROM
-                next_step = T0; // Loop back to the start
-            end
-            T_HLT: begin
-                next_step = T_HLT; // Remain in halt state
+            
+            S_HALT: begin
+                next_control_word = '{default: 0}; // Default control word
+                next_state = S_HALT; // Remain in halt state
             end
             default: begin
                 next_control_word = '{default: 0}; // Default control word
-                next_step = T_HLT; // Transition to halt state on error
+                next_state = S_HALT; // Transition to halt state on error
             end
         endcase
     end
@@ -204,18 +201,19 @@ module computer (
             end
         end
         
-        microcode_rom[LDA][T4] = '{default: 0, oe_ir: 1}; // Load instruction register
-        microcode_rom[LDA][T5] = '{default: 0, oe_ir: 1, load_mar: 1}; // Prepare to load from RAM
-        microcode_rom[LDA][T6] = '{default: 0, oe_ram: 1}; // Enable RAM output
-        microcode_rom[LDA][T7] = '{default: 0, oe_ram: 1, load_a: 1}; // Load value into register A
-        microcode_rom[LDA][T8] = '{default: 0}; // End of LDA instruction
+        microcode_rom[LDA][MS0] = '{default: 0, oe_ir: 1}; // Load instruction register
+        microcode_rom[LDA][MS1] = '{default: 0, oe_ir: 1, load_mar: 1}; // Prepare to load from RAM
+        microcode_rom[LDA][MS2] = '{default: 0, oe_ram: 1}; // Enable RAM output
+        microcode_rom[LDA][MS3] = '{default: 0, oe_ram: 1, load_a: 1}; // Load value into register A
+        microcode_rom[LDA][MS4] = '{default: 0}; // End of LDA instruction
 
-        microcode_rom[LDB][T4] = '{default: 0, oe_ir: 1}; // Load instruction register
-        microcode_rom[LDB][T5] = '{default: 0, oe_ir: 1, load_mar: 1}; // Prepare to load from RAM
-        microcode_rom[LDB][T6] = '{default: 0, oe_ram: 1}; // Enable RAM output
-        microcode_rom[LDB][T7] = '{default: 0, oe_ram: 1, load_b: 1}; // Load value into register A
-        microcode_rom[LDB][T8] = '{default: 0}; // End of LDA instruction
+        microcode_rom[LDB][MS0] = '{default: 0, oe_ir: 1}; // Load instruction register
+        microcode_rom[LDB][MS1] = '{default: 0, oe_ir: 1, load_mar: 1}; // Prepare to load from RAM
+        microcode_rom[LDB][MS2] = '{default: 0, oe_ram: 1}; // Enable RAM output
+        microcode_rom[LDB][MS3] = '{default: 0, oe_ram: 1, load_b: 1}; // Load value into register A
+        microcode_rom[LDB][MS4] = '{default: 0}; // End of LDA instruction
         
+        microcode_rom[LDB][MS0] = '{default: 0, halt: 1}; // Load instruction register
     end
 
     // TODO: output_register u_out_reg (to be implemented in future)
