@@ -104,16 +104,19 @@ module computer (
     microstep_t current_step = T_RESET;
     microstep_t next_step = T_RESET;
 
-    always_ff @(posedge clk) begin
-        if (reset) begin
+    always_ff @(posedge clk or posedge reset) begin // ADD posedge reset
+        if (reset) begin // ASYNC check
             current_step <= T_RESET;
             control_word <= '{default: 0};
-        end else if (halt) begin
-            current_step <= T_HLT;
-            control_word <= '{default: 0};
-        end else begin
-            current_step <= next_step;
-            control_word <= next_control_word;
+        end else begin // Normal clocked operation
+            // Halt logic might need adjustment depending on sync/async intent
+            if (halt) begin
+                current_step <= T_HLT;
+                control_word <= '{default: 0};
+            end else begin
+                current_step <= next_step;
+                control_word <= next_control_word;
+            end
         end
     end
 
@@ -131,7 +134,7 @@ module computer (
                 next_step = T1; 
             end
             T1: begin
-                next_control_word = '{default: 0, load_mar: 1};
+                next_control_word = '{default: 0, oe_pc: 1, load_mar: 1};
                 next_step = T2;
             end
             T2: begin
@@ -139,7 +142,7 @@ module computer (
                 next_step = T3;
             end
             T3: begin
-                next_control_word = '{default: 0, load_ir: 1, pc_enable: 1};
+                next_control_word = '{default: 0, oe_ram: 1, load_ir: 1, pc_enable: 1};
                 next_step = T4;
             end
             T4: begin
@@ -156,6 +159,10 @@ module computer (
             end
             T7: begin
                 next_control_word = microcode_rom[opcode][T7];
+                next_step = T8;
+            end
+            T8: begin
+                next_control_word = microcode_rom[opcode][T8];
                 next_step = T0;
             end
             T_HLT: begin
@@ -198,13 +205,19 @@ module computer (
         
         microcode_rom[NOP][T4] = '{default: 0};
         microcode_rom[NOP][T5] = '{default: 0};
+        microcode_rom[NOP][T6] = '{default: 0};
+        microcode_rom[NOP][T7] = '{default: 0};
         
         microcode_rom[LDA][T4] = '{default: 0, oe_ir: 1};
-        microcode_rom[LDA][T5] = '{default: 0, load_mar: 1};
+        microcode_rom[LDA][T5] = '{default: 0, oe_ir: 1, load_mar: 1};
         microcode_rom[LDA][T6] = '{default: 0, oe_ram: 1};
-        microcode_rom[LDA][T7] = '{default: 0, load_a: 1};
+        microcode_rom[LDA][T7] = '{default: 0, oe_ram: 1, load_a: 1};
+        microcode_rom[LDA][T8] = '{default: 0};
 
         microcode_rom[HLT][T4] = '{default: 0, halt: 1};
+        microcode_rom[HLT][T5] = '{default: 0, halt: 1};
+        microcode_rom[HLT][T6] = '{default: 0, halt: 1};
+        microcode_rom[HLT][T7] = '{default: 0, halt: 1};
     end
 
      // output_register u_out_reg (

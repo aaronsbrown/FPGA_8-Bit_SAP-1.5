@@ -15,6 +15,7 @@ typedef enum logic [3:0] {
     T5 = 4'b0101,
     T6 = 4'b0110,
     T7 = 4'b0111,
+    T8 = 4'b1000,
     T_RESET = 4'b1110,
     T_HLT = 4'b1111
 } microstep_t;

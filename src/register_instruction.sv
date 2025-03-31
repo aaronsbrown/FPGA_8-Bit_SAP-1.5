@@ -11,7 +11,7 @@ module register_instruction (
 
     instruction_t instruction;
 
-    always_ff @(posedge clk) begin
+    always_ff @(posedge clk or posedge reset) begin
         if (reset) 
             instruction <= '0;
         else if (load) 
