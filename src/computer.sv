@@ -28,10 +28,10 @@ module computer (
     logic [7:0] bus;
     
     // Control signals for loading data from the bus into registers
-    logic load_a, load_b, load_ir, load_pc, load_temp, load_ram, load_mar;
+    logic load_a, load_b, load_ir, load_pc, load_ram, load_mar;
     
     // Control signals for outputting data to the bus
-    logic oe_a, oe_b, oe_ir, oe_pc, oe_temp, oe_ram;
+    logic oe_a, oe_ir, oe_pc, oe_ram;
 
     // Control signal to indicate if the CPU should halt
     logic halt;
@@ -47,14 +47,7 @@ module computer (
     );
 
     // Temporary register for holding intermediate values
-    register_nbit #( .N(8) ) u_register_temp (
-        .clk(clk),
-        .reset(reset),
-        .load(load_temp),
-        .data_in(bus),
-        .latched_data(temp_out)
-    );
-
+    
     // Register A for holding one of the operands
     register_nbit #( .N(8) ) u_register_A (
         .clk(clk),
@@ -103,12 +96,10 @@ module computer (
     );
 
     // Tri-state bus logic modeled using a priority multiplexer
-    assign bus =    (oe_temp)   ? temp_out :
-                    (oe_pc)     ? counter_out : // CO
+    assign bus =    (oe_pc)     ? counter_out : // CO
                     (oe_ram)    ? ram_out :
                     (oe_ir)     ? operand :
                     (oe_a)      ? a_out : 
-                    (oe_b)      ? b_out : 
                     8'b0;
     
     assign out_val = bus; // Output the value on the bus
@@ -196,13 +187,10 @@ module computer (
     assign load_pc = control_word.load_pc;
     assign load_mar = control_word.load_mar;
     assign load_ram = control_word.load_ram;
-    assign load_temp = control_word.load_temp;
     assign oe_a = control_word.oe_a;
-    assign oe_b = control_word.oe_b;        
     assign oe_ir = control_word.oe_ir;
     assign oe_pc = control_word.oe_pc;
     assign oe_ram = control_word.oe_ram;
-    assign oe_temp = control_word.oe_temp;
     assign pc_enable = control_word.pc_enable; 
     assign halt = control_word.halt; 
 
@@ -216,23 +204,18 @@ module computer (
             end
         end
         
-        // These assignments are not strictly necessary due to default initialization, 
-        // but they improve clarity by explicitly stating the intended behavior.
-        microcode_rom[NOP][T4] = '{default: 0}; 
-        microcode_rom[NOP][T5] = '{default: 0}; 
-        microcode_rom[NOP][T6] = '{default: 0}; 
-        microcode_rom[NOP][T7] = '{default: 0}; 
-        
         microcode_rom[LDA][T4] = '{default: 0, oe_ir: 1}; // Load instruction register
         microcode_rom[LDA][T5] = '{default: 0, oe_ir: 1, load_mar: 1}; // Prepare to load from RAM
         microcode_rom[LDA][T6] = '{default: 0, oe_ram: 1}; // Enable RAM output
         microcode_rom[LDA][T7] = '{default: 0, oe_ram: 1, load_a: 1}; // Load value into register A
         microcode_rom[LDA][T8] = '{default: 0}; // End of LDA instruction
 
-        microcode_rom[HLT][T4] = '{default: 0, halt: 1}; // Set halt signal
-        microcode_rom[HLT][T5] = '{default: 0, halt: 1}; // Maintain halt signal
-        microcode_rom[HLT][T6] = '{default: 0, halt: 1}; // Maintain halt signal
-        microcode_rom[HLT][T7] = '{default: 0, halt: 1}; // Maintain halt signal
+        microcode_rom[LDB][T4] = '{default: 0, oe_ir: 1}; // Load instruction register
+        microcode_rom[LDB][T5] = '{default: 0, oe_ir: 1, load_mar: 1}; // Prepare to load from RAM
+        microcode_rom[LDB][T6] = '{default: 0, oe_ram: 1}; // Enable RAM output
+        microcode_rom[LDB][T7] = '{default: 0, oe_ram: 1, load_b: 1}; // Load value into register A
+        microcode_rom[LDB][T8] = '{default: 0}; // End of LDA instruction
+        
     end
 
     // TODO: output_register u_out_reg (to be implemented in future)

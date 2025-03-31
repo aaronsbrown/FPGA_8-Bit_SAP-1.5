@@ -26,14 +26,19 @@ module computer_tb;
         
         @(posedge clk); // 000
         reset = 0;
-        $display("RAM[0] = %b", uut.u_ram.ram[0]);
         
-       
-        repeat (30) begin
+
+        repeat (10) begin
             @(posedge clk);
         end
+        pretty_print_assert_vec(uut.u_register_A.latched_data, 8'h44, "A Reg is 0x44");
 
-        // release uut.u_register_temp.latched_data;
+        repeat (10) begin
+            @(posedge clk);
+        end
+        pretty_print_assert_vec(uut.u_register_B.latched_data, 8'h22, "B Reg is 0x22");
+
+
         $display("Test complete at time %0t", $time);
         $finish;
     end

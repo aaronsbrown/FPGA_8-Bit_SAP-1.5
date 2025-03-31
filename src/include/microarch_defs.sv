@@ -1,7 +1,8 @@
 typedef enum logic [3:0] {
         NOP = 4'b0000,
         LDA = 4'b0001,
-        ADD = 4'b0010,
+        LDB = 4'b0010,
+        ADD = 4'b0011,
         OUTA = 4'b1110,
         HLT = 4'b1111
 } opcode_t;
@@ -26,33 +27,23 @@ typedef struct packed {
 } instruction_t;
 
 typedef struct packed {
-    logic pc_enable;    //CE
-    logic load_pc;      //J 
-    logic oe_pc;        //CO
-    
-    logic load_a;       //AI
-    logic oe_a;         //AO
-    
-    logic load_b;       //BI
-    logic oe_b;         //BO -- not in ben's 16bit contol word 
-    
-    logic load_ir;      //II
-    logic oe_ir;        //IO
-    
+    logic halt;         //HLT  
     logic load_mar;     //MI
     logic load_ram;     //RI
     logic oe_ram;       //RO
+    logic load_ir;      //II
+    logic oe_ir;        //IO
+    logic load_a;       //AI
+    logic oe_a;         //AO
+    logic oe_alu;       //EO
+    logic alu_sub;      //SU
+    logic load_b;       //BI
+    logic load_o;       //OI
+    logic pc_enable;    //CE
+    logic oe_pc;        //CO
+    logic load_pc;      //J 
+    logic load_flag;    //FI
+    // logic oe_b;         //BO -- not in ben's 16bit contol word 
     
-    logic load_temp;    // to remove soon
-    logic oe_temp;
-    
-    logic halt;         //HLT  
-
-    // TODO
-    // OI -- Output reg in
-    // EO -- ALU out
-    // SU -- subtract
-    // FI -- load_flag 
-
 } control_word_t;
 
