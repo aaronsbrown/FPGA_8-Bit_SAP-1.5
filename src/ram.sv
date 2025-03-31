@@ -21,4 +21,9 @@ always @(posedge clk) begin
     end
 end
 
+initial begin
+    ram[0] = 8'b00010001; // LDA 0x01
+    ram[1] = 8'b11110000; // HLT
+end
+
 endmodule

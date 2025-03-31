@@ -10,7 +10,7 @@ module register_nbit #(
 
     always @(posedge clk) begin
         if (reset) begin
-            latched_data <= 0;
+            latched_data <= 4'b0;
         end else if (load) begin
             latched_data <= data_in;
         end

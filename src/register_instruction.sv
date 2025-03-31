@@ -5,7 +5,7 @@ module register_instruction (
     input   logic           reset,
     input   logic           load,
     input   logic   [7:0]   data_in,
-    output  logic   [3:0]   opcode,
+    output  opcode_t        opcode,
     output  logic   [3:0]   operand
 );
 

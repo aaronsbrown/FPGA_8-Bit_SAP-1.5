@@ -13,10 +13,10 @@ module program_counter #(
     always_ff @(posedge clk) begin
         if(reset) begin
             counter_out <= 0;
-            end else if (load) begin
+        end else if (load) begin
             counter_out <= counter_in;
         end else if(enable) begin
-                counter_out <= counter_out + 1;
+            counter_out <= counter_out + 1;
         end
     end
 
