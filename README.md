@@ -11,6 +11,7 @@ This project is a Verilog-based recreation of Ben Eater's classic breadboard 8-b
 - Mirror the shared 8-bit bus architecture with tri-state logic
 - Simulate using Icarus Verilog + GTKWave
 - Load and execute simple machine code programs
+- Implement a microcoded control unit for extensible instruction handling
 - Later: explore extensions like stack support, more RAM, or additional instructions
 
 ---
@@ -39,10 +40,10 @@ This project is a Verilog-based recreation of Ben Eater's classic breadboard 8-b
 ## 🚦 Project Status
 
 - [x] Project initialized
-- [ ] Bus + register structure defined
-- [ ] Instruction cycle implemented
-- [ ] Program loaded from RAM
-- [ ] All modules verified via simulation
+- [x] Bus + register structure defined
+- [x] Instruction cycle implemented
+- [x] Program loaded from RAM
+- [x] All modules verified via simulation
 - [ ] FPGA synthesis + LED output tested
 
 ---
@@ -52,8 +53,7 @@ This project is a Verilog-based recreation of Ben Eater's classic breadboard 8-b
 To run a simulation:
 
 ```bash
-./scripts/simulate.sh --no-viz src/8bit_fpga.v
-./scripts/simulate.sh src/8bit_fpga.v
+./scripts/simulate.sh --tb test/computer_tb.sv
 ```
 
 🧪 Test Strategy
@@ -64,4 +64,3 @@ Each module will be individually verified via simulation using Icarus Verilog an
  • Icarus Verilog
  • GTKWave
  • Yosys + nextpnr for synthesis
-
