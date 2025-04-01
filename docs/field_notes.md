@@ -77,6 +77,8 @@ assign bus = (a_out_en) ? a_out :
 **Solution 1 (Workaround):** Added `initial counter_out = 0;` to force initialization.  
 **Solution 2 (Adopted):** Switched to asynchronous reset (`always_ff @(posedge clk or posedge reset)`), ensuring reset activates at `T=0`.
 
+**REAL SOLUTION: Clock was initialized to 0 in testbench, so was never high when the reset signal was high.Therefore the synchronous reset never occured.
+
 ---
 
 ### ❌ Problem: Control signals / `control_word` becoming 'x'

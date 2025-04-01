@@ -110,7 +110,7 @@ module computer (
     microstep_t next_step; // Next microstep to transition to
 
     // Sequential logic for controlling the CPU's operation based on clock and reset signals
-    always_ff @(posedge clk or posedge reset) begin // ADD posedge reset
+    always_ff @(posedge clk) begin // ADD posedge reset
         if (reset) begin // ASYNC check
             current_state <= S_RESET; // Reset to initial state
             current_step <= MS0; // Reset to initial step

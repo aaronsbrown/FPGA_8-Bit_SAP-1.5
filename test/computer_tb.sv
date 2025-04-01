@@ -14,7 +14,7 @@ module computer_tb;
     );
 
     initial begin
-        clk = 0;
+        clk = 1;
         forever #5 clk = ~clk; // Generate a clock signal with a period of 10 time units
     end
 

@@ -10,18 +10,14 @@ module program_counter #(
 );
 
     
-     // Changed sensitivity list: trigger on posedge clk OR posedge reset
-    always_ff @(posedge clk or posedge reset) begin
-        // Check reset first (asynchronous)
+    always_ff @(posedge clk) begin
         if (reset) begin // No need to wait for clock edge
             counter_out <= {ADDR_WIDTH{1'b0}};
-        // If not resetting, check load/enable on the clock edge
-        end else if (load) begin // Note: Removed 'posedge clk' check here, covered by sensitivity list
+        end else if (load) begin 
             counter_out <= counter_in;
         end else if (enable) begin
             counter_out <= counter_out + 1;
         end
-        // If none of the above, implicitly hold value on posedge clk
     end
 
 
