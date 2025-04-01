@@ -213,7 +213,7 @@ module computer (
         microcode_rom[LDB][MS3] = '{default: 0, oe_ram: 1, load_b: 1}; // Load value into register A
         microcode_rom[LDB][MS4] = '{default: 0}; // End of LDA instruction
         
-        microcode_rom[LDB][MS0] = '{default: 0, halt: 1}; // Load instruction register
+        microcode_rom[HLT][MS0] = '{default: 0, halt: 1}; // Load instruction register
     end
 
     // TODO: output_register u_out_reg (to be implemented in future)
