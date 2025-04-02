@@ -6,7 +6,8 @@
 module computer (
     input wire clk,
     input wire reset, 
-    output wire [7:0] out_val
+    output wire [7:0] out_val,
+    output wire [1:0] cpu_flags
 );
 
     // Control words are initialized to zero to avoid 'x' propagation in the system.
@@ -95,14 +96,20 @@ module computer (
         .operand(operand)
     );
 
+    logic flag_zero;
+    logic flag_carry;
     alu u_alu (
         .clk(clk),
         .reset(reset),
         .a_in(a_out),
         .b_in(b_out),
         .alu_op(alu_op),
-        .result_out(alu_out)
+        .result_out(alu_out),
+        .zero_flag(flag_zero),
+        .carry_flag(flag_carry)
     );
+    assign cpu_flags[1] = flag_carry;
+    assign cpu_flags[0] = flag_zero;
     
     // RAM module instantiation
     ram u_ram (
@@ -116,7 +123,7 @@ module computer (
     // Tri-state bus logic modeled using a priority multiplexer
     assign bus =    (oe_pc)     ? counter_out : // CO
                     (oe_ram)    ? ram_out :
-                    (oe_ir)     ? operand :
+                    (oe_ir)     ? {4'b0000, operand} :
                     (oe_alu)    ? alu_out :
                     (oe_a)      ? a_out : 
                     8'b0;
@@ -169,11 +176,18 @@ module computer (
             S_EXECUTE: begin
                 next_control_word = microcode_rom[opcode][current_step]; // Fetch control word from microcode ROM
                 if (next_control_word.halt) begin
-                    next_state = S_HALT; // Transition to halt state
-                    next_step = MS0; // Reset microstep
+                    next_state = S_HALT; 
+                    next_step = MS0; 
+                // end else if ( (next_control_word.check_zero && !flag_zero) ||
+                //               (next_control_word.check_carry && !flag_carry) ) begin
+                   
+                //    // Skip loading PC with JMP address if conditions aren't met
+                //    next_control_word = '{default:0};
+                //    next_state = S_FETCH_0;
+                //    next_step = MS0; 
                 end else if (next_control_word.last_step) begin
-                    next_step = MS0; // Reset microstep
                     next_state = S_FETCH_0; 
+                    next_step = MS0; 
                 end else begin
                     next_step = current_step + 1; // Increment microstep
                 end
@@ -217,6 +231,8 @@ module computer (
             end
         end
         
+        microcode_rom[NOP][MS0] = '{default: 0, last_step: 1}; // Load instruction register
+
         microcode_rom[LDA][MS0] = '{default: 0, oe_ir: 1}; // Load instruction register
         microcode_rom[LDA][MS1] = '{default: 0, oe_ir: 1, load_mar: 1}; // Prepare to load from RAM
         microcode_rom[LDA][MS2] = '{default: 0, oe_ram: 1}; // Enable RAM output
@@ -227,7 +243,6 @@ module computer (
         microcode_rom[LDB][MS2] = '{default: 0, oe_ram: 1}; // Enable RAM output
         microcode_rom[LDB][MS3] = '{default: 0, oe_ram: 1, load_b: 1, last_step: 1}; // Load value into register B
         
-
         microcode_rom[ADD][MS0] = '{default: 0, oe_ir: 1};
         microcode_rom[ADD][MS1] = '{default: 0, oe_ir: 1, load_mar: 1}; // Load MAR with operand
         microcode_rom[ADD][MS2] = '{default: 0, oe_ram: 1}; // Enable RAM output        
@@ -242,7 +257,42 @@ module computer (
         microcode_rom[SUB][MS4] = '{default: 0, oe_alu: 1, alu_op: ALU_SUB}; // Add and output
         microcode_rom[SUB][MS5] = '{default: 0, oe_alu: 1, load_a: 1, last_step: 1}; // Load value into register A
 
+        microcode_rom[AND][MS0] = '{default: 0, oe_ir: 1};
+        microcode_rom[AND][MS1] = '{default: 0, oe_ir: 1, load_mar: 1}; // Load MAR with operand
+        microcode_rom[AND][MS2] = '{default: 0, oe_ram: 1}; // Enable RAM output        
+        microcode_rom[AND][MS3] = '{default: 0, oe_ram: 1, load_b: 1}; // Load value into register B
+        microcode_rom[AND][MS4] = '{default: 0, oe_alu: 1, alu_op: ALU_AND}; // Add and output
+        microcode_rom[AND][MS5] = '{default: 0, oe_alu: 1, load_a: 1, last_step: 1}; // Load value into register A
 
+        microcode_rom[OR][MS0] = '{default: 0, oe_ir: 1};
+        microcode_rom[OR][MS1] = '{default: 0, oe_ir: 1, load_mar: 1}; // Load MAR with operand
+        microcode_rom[OR][MS2] = '{default: 0, oe_ram: 1}; // Enable RAM output        
+        microcode_rom[OR][MS3] = '{default: 0, oe_ram: 1, load_b: 1}; // Load value into register B
+        microcode_rom[OR][MS4] = '{default: 0, oe_alu: 1, alu_op: ALU_OR}; // Add and output
+        microcode_rom[OR][MS5] = '{default: 0, oe_alu: 1, load_a: 1, last_step: 1}; // Load value into register A
+
+        microcode_rom[STA][MS0] = '{default: 0, oe_ir: 1}; // Load instruction register
+        microcode_rom[STA][MS1] = '{default: 0, oe_ir: 1, load_mar: 1}; // Prepare to load to RAM
+        microcode_rom[STA][MS2] = '{default: 0, oe_a: 1}; // Enable A output
+        microcode_rom[STA][MS3] = '{default: 0, oe_a: 1, load_ram: 1, last_step: 1}; // Load value into Mem
+       
+        microcode_rom[LDI][MS0] = '{default: 0, oe_ir: 1}; // Load instruction register
+        microcode_rom[LDI][MS1] = '{default: 0, oe_ir: 1, load_a: 1, last_step: 1}; // Load A
+        
+        microcode_rom[JMP][MS0] = '{default: 0, oe_ir: 1}; // Load instruction register
+        microcode_rom[JMP][MS1] = '{default: 0, oe_ir: 1, load_pc: 1, last_step: 1}; // Load program counter
+
+        microcode_rom[JZ][MS0] = '{default: 0, oe_ir: 1}; // Load instruction register
+        microcode_rom[JZ][MS1] = '{default: 0, oe_ir: 1, check_zero: 1, load_pc: 1, last_step: 1}; // Load program counter
+
+        microcode_rom[JC][MS0] = '{default: 0, oe_ir: 1}; // Load instruction register
+        microcode_rom[JC][MS1] = '{default: 0, oe_ir: 1, check_carry: 1, load_pc: 1, last_step: 1}; // Load program counter
+
+        microcode_rom[OUTM][MS0] = '{default: 0, oe_ir: 1}; // Load instruction register
+        microcode_rom[OUTM][MS1] = '{default: 0, oe_ir: 1, load_mar: 1}; // Prepare to load from RAM
+        microcode_rom[OUTM][MS2] = '{default: 0, oe_ram: 1}; // Enable RAM output
+        microcode_rom[OUTM][MS3] = '{default: 0, oe_ram: 1, load_o: 1, last_step: 1}; // Load value into register A
+       
         microcode_rom[OUTA][MS0] = '{default: 0, oe_a: 1}; // Output register A
         microcode_rom[OUTA][MS1] = '{default: 0, oe_a: 1, load_o: 1, last_step: 1}; // 
         

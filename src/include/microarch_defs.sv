@@ -1,11 +1,19 @@
 typedef enum logic [3:0] {
-        NOP = 4'b0000,
-        LDA = 4'b0001,
-        LDB = 4'b0010,
-        ADD = 4'b0011,
-        SUB = 4'b0100,
-        OUTA = 4'b1110,
-        HLT = 4'b1111
+        NOP =   4'b0000,
+        LDA =   4'b0001,
+        LDB =   4'b0010,
+        ADD =   4'b0011,
+        SUB =   4'b0100,
+        AND =   4'b0101,
+        OR  =   4'b0110,
+        STA =   4'b0111,
+        LDI =   4'b1000,
+        JMP =   4'b1001,
+        JC  =   4'b1010,
+        JZ  =   4'b1011,
+        OUTM =  4'b1101,
+        OUTA =  4'b1110,
+        HLT =   4'b1111
 } opcode_t;
     
 typedef enum logic [1:0] {
@@ -54,6 +62,8 @@ typedef struct packed {
     logic load_pc;      //J 
     logic load_flag;    //FI
     logic last_step;   //LS
+    logic check_zero;
+    logic check_carry;
     
     
 } control_word_t;

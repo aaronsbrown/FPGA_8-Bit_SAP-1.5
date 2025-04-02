@@ -2,6 +2,7 @@ module top (
     input clk,
     input rst_n,
     output [7:0] led,
+    output [1:0] io_led,
     output [6:0] io_segment,
     output [3:0] io_select
 );
@@ -23,10 +24,14 @@ module top (
 
     reg [7:0] output_value;
     assign led = output_value;
+    
+    reg [1:0] flags;
+    assign io_led = flags;
     computer u_computer (
         .clk(clk_out),
         .reset(sys_reset),
-        .out_val(output_value)
+        .out_val(output_value),
+        .cpu_flags(flags)
     );
     
     seg7_display u_display (

@@ -41,6 +41,7 @@ module alu (
 
             // Set zero flag if result is zero
             zero_flag <= (result_out == 8'b0);
+            
             // Set negative flag if result is negative (MSB is 1)
             negative_flag <= result_out[7];
         
