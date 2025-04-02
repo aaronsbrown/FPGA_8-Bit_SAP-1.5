@@ -80,9 +80,9 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 [ "$VERBOSE" = true ] && log_debug "Project directory determined as: $PROJECT_DIR"
 
-# --- Load Verilog Files from files.f if none provided ---
+# --- Load Verilog Files from _files.f if none provided ---
 if [[ ${#VERILOG_FILES[@]} -eq 0 ]]; then
-    FILE_LIST="$PROJECT_DIR/src/files.f"
+    FILE_LIST="$PROJECT_DIR/src/_files.f"
     if [[ -f "$FILE_LIST" ]]; then
         log_info "Loading Verilog sources from: $FILE_LIST"
         while IFS= read -r line || [ -n "$line" ]; do
@@ -167,7 +167,7 @@ fi
 SIM_VVP="$BUILD_DIR/sim.vvp"
 log_info "Compiling simulation sources..."
 # Add the test directory to the include path (-I option) so that test_utilities.sv can be found.
-IVERILOG_CMD=(iverilog -g2012 -I "$PROJECT_DIR/test" -o "$SIM_VVP" "${FINAL_VERILOG_FILES[@]}")
+IVERILOG_CMD=(iverilog -DSIMULATION -g2012 -I "$PROJECT_DIR/test" -o "$SIM_VVP" "${FINAL_VERILOG_FILES[@]}")
 
 cp "$PROJECT_DIR/fixture/program.hex" "$BUILD_DIR/program.hex"
 

@@ -74,7 +74,7 @@ PROJECT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 # --- Load Verilog Files ---
 if [[ ${#VERILOG_FILES[@]} -eq 0 ]]; then
-    FILE_LIST="$PROJECT_DIR/src/files.f"
+    FILE_LIST="$PROJECT_DIR/src/_files.f"
     if [[ -f "$FILE_LIST" ]]; then
         log_info "Loading Verilog sources from: $FILE_LIST"
         # Read each line, trim whitespace, and add if not empty/comment.
@@ -148,6 +148,21 @@ for file in "${PROJECT_PCF_FILES[@]}"; do
 done
 log_info "Merged constraints saved to: $MERGED_PCF"
 
+# --- Optional SDC Conversion ---
+MERGED_SDC="$BUILD_DIR/merged_constraints.sdc"
+PROJECT_SDC_FILES=( $(find "$PROJECT_CONSTRAINT_DIR" -maxdepth 1 -type f -name "*.sdc" 2>/dev/null) )
+if [[ ${#PROJECT_SDC_FILES[@]} -gt 0 ]]; then
+    log_info "Merging SDC constraint files..."
+    > "$MERGED_SDC"
+    for file in "${PROJECT_SDC_FILES[@]}"; do
+        cat "$file" >> "$MERGED_SDC"
+        echo "" >> "$MERGED_SDC"
+    done
+    log_info "Merged SDC constraints saved to: $MERGED_SDC"
+else
+    log_info "No SDC constraint files found in $PROJECT_CONSTRAINT_DIR"
+fi
+
 # --- Output Files ---
 YOSYS_JSON="$BUILD_DIR/hardware.json"
 NEXTPNR_ASC="$BUILD_DIR/hardware.asc"
@@ -164,7 +179,11 @@ log_success "Yosys synthesis completed."
 
 # --- nextpnr ---
 log_info "Running nextpnr-ice40..."
-NEXTPNR_CMD=(nextpnr-ice40 --hx8k --package cb132 --json "$YOSYS_JSON" --asc "$NEXTPNR_ASC" --pcf "$MERGED_PCF")
+if [[ -f "$MERGED_SDC" ]]; then
+    NEXTPNR_CMD=(nextpnr-ice40 --hx8k --package cb132 --json "$YOSYS_JSON" --asc "$NEXTPNR_ASC" --pcf "$MERGED_PCF" --sdc "$MERGED_SDC")
+else
+    NEXTPNR_CMD=(nextpnr-ice40 --hx8k --package cb132 --json "$YOSYS_JSON" --asc "$NEXTPNR_ASC" --pcf "$MERGED_PCF")
+fi
 [ "$VERBOSE" = true ] && log_debug "nextpnr-ice40 command: ${NEXTPNR_CMD[*]}"
 run_cmd "$LOG_DIR/nextpnr.log" "${NEXTPNR_CMD[@]}"
 log_success "nextpnr-ice40 completed."

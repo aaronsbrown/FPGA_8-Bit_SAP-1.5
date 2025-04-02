@@ -22,13 +22,13 @@ module computer (
     logic [3:0] counter_out, memory_address_out; // Outputs from the program counter and memory address register
     
     // Register outputs to simulate bus transceiver behavior
-    logic [7:0] a_out, b_out, ir_out, temp_out, ram_out;
+    logic [7:0] o_out, a_out, b_out, ir_out, ram_out;
     
     // Shared bus for data transfer among components
     logic [7:0] bus;
     
     // Control signals for loading data from the bus into registers
-    logic load_a, load_b, load_ir, load_pc, load_ram, load_mar;
+    logic load_o, load_a, load_b, load_ir, load_pc, load_ram, load_mar;
     
     // Control signals for outputting data to the bus
     logic oe_a, oe_ir, oe_pc, oe_ram;
@@ -46,7 +46,15 @@ module computer (
         .counter_out(counter_out)
     );
 
-    // Temporary register for holding intermediate values
+    // Output register for holding the output value
+    assign out_val = o_out;
+    register_nbit #( .N(8) ) u_output_register (
+        .clk(clk),
+        .reset(reset),
+        .load(load_o),
+        .data_in(bus),
+        .latched_data(o_out)
+    );
     
     // Register A for holding one of the operands
     register_nbit #( .N(8) ) u_register_A (
@@ -101,8 +109,6 @@ module computer (
                     (oe_ir)     ? operand :
                     (oe_a)      ? a_out : 
                     8'b0;
-    
-    assign out_val = bus; // Output the value on the bus
     
     fsm_state_t current_state = S_RESET; // Current microstep in execution
     fsm_state_t next_state = S_RESET; // Next microstep to transition to
@@ -178,6 +184,7 @@ module computer (
     end
 
     // Assign control signals from the control word
+    assign load_o = control_word.load_o;
     assign load_a = control_word.load_a;
     assign load_b = control_word.load_b;
     assign load_ir = control_word.load_ir;
@@ -213,7 +220,12 @@ module computer (
         microcode_rom[LDB][MS3] = '{default: 0, oe_ram: 1, load_b: 1}; // Load value into register A
         microcode_rom[LDB][MS4] = '{default: 0}; // End of LDA instruction
         
+        microcode_rom[OUTA][MS0] = '{default: 0, oe_a: 1}; // Output register A
+        microcode_rom[OUTA][MS1] = '{default: 0, oe_a: 1, load_o: 1}; // 
+        microcode_rom[OUTA][MS2] = '{default: 0}; //
+
         microcode_rom[HLT][MS0] = '{default: 0, halt: 1}; // Load instruction register
+        microcode_rom[HLT][MS1] = '{default: 0, halt: 1}; // End of LDA instruction
     end
 
     // TODO: output_register u_out_reg (to be implemented in future)

@@ -4,7 +4,7 @@
 module computer_tb;
     // Declare testbench signals
     reg clk, reset;
-    reg [7:0] out_val;
+    wire [7:0] out_val;
 
     // Instantiate the DUT
     computer uut (
