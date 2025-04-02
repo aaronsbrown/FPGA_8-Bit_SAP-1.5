@@ -122,16 +122,9 @@ module computer (
             current_step <= MS0; // Reset to initial step
             control_word <= '{default: 0}; // Clear control word
         end else begin // Normal clocked operation
-            // Handle halt logic; may require adjustment for synchronous/asynchronous intent
-            if (halt) begin
-                current_state <= S_HALT; // Transition to halt state
-                current_step <= MS0; // Reset step
-                control_word <= '{default: 0}; // Clear control word
-            end else begin
-                current_state <= next_state; // Update to next step
-                current_step <= next_step; // Update to next microstep
-                control_word <= next_control_word; // Update control word
-            end
+            current_state <= next_state; // Update to next step
+            current_step <= next_step; // Update to next microstep
+            control_word <= next_control_word; // Update control word
         end
     end
 
@@ -164,7 +157,10 @@ module computer (
             
             S_EXECUTE: begin
                 next_control_word = microcode_rom[opcode][current_step]; // Fetch control word from microcode ROM
-                if (control_word.last_step) begin
+                if (next_control_word.halt) begin
+                    next_state = S_HALT; // Transition to halt state
+                    next_step = MS0; // Reset microstep
+                end else if (next_control_word.last_step) begin
                     next_step = MS0; // Reset microstep
                     next_state = S_FETCH_0; 
                 end else begin
@@ -221,11 +217,12 @@ module computer (
         microcode_rom[OUTA][MS0] = '{default: 0, oe_a: 1}; // Output register A
         microcode_rom[OUTA][MS1] = '{default: 0, oe_a: 1, load_o: 1, last_step: 1}; // 
         
-        microcode_rom[HLT][MS0] = '{default: 0, halt: 1}; // Load instruction register
-        microcode_rom[HLT][MS0] = '{default: 0, last_step: 1}; // Load instruction register
+        // Halt needs two cycles to stabilize
+        microcode_rom[HLT][MS0] = '{default: 0}; // stabilization cycle
+        microcode_rom[HLT][MS1] = '{default: 0, halt: 1, last_step: 1}; // halt
     end
 
-    // TODO: output_register u_out_reg (to be implemented in future)
+    
     
     // TODO: alu u_alu (to be implemented in future)
     //     .clk(clk),
