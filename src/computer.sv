@@ -164,7 +164,7 @@ module computer (
             
             S_EXECUTE: begin
                 next_control_word = microcode_rom[opcode][current_step]; // Fetch control word from microcode ROM
-                if (current_step == MS7) begin
+                if (control_word.last_step) begin
                     next_step = MS0; // Reset microstep
                     next_state = S_FETCH_0; 
                 end else begin
@@ -211,21 +211,18 @@ module computer (
         microcode_rom[LDA][MS0] = '{default: 0, oe_ir: 1}; // Load instruction register
         microcode_rom[LDA][MS1] = '{default: 0, oe_ir: 1, load_mar: 1}; // Prepare to load from RAM
         microcode_rom[LDA][MS2] = '{default: 0, oe_ram: 1}; // Enable RAM output
-        microcode_rom[LDA][MS3] = '{default: 0, oe_ram: 1, load_a: 1}; // Load value into register A
-        microcode_rom[LDA][MS4] = '{default: 0}; // End of LDA instruction
-
+        microcode_rom[LDA][MS3] = '{default: 0, oe_ram: 1, load_a: 1, last_step: 1}; // Load value into register A
+        
         microcode_rom[LDB][MS0] = '{default: 0, oe_ir: 1}; // Load instruction register
         microcode_rom[LDB][MS1] = '{default: 0, oe_ir: 1, load_mar: 1}; // Prepare to load from RAM
         microcode_rom[LDB][MS2] = '{default: 0, oe_ram: 1}; // Enable RAM output
-        microcode_rom[LDB][MS3] = '{default: 0, oe_ram: 1, load_b: 1}; // Load value into register A
-        microcode_rom[LDB][MS4] = '{default: 0}; // End of LDA instruction
+        microcode_rom[LDB][MS3] = '{default: 0, oe_ram: 1, load_b: 1, last_step: 1}; // Load value into register A
         
         microcode_rom[OUTA][MS0] = '{default: 0, oe_a: 1}; // Output register A
-        microcode_rom[OUTA][MS1] = '{default: 0, oe_a: 1, load_o: 1}; // 
-        microcode_rom[OUTA][MS2] = '{default: 0}; //
-
+        microcode_rom[OUTA][MS1] = '{default: 0, oe_a: 1, load_o: 1, last_step: 1}; // 
+        
         microcode_rom[HLT][MS0] = '{default: 0, halt: 1}; // Load instruction register
-        microcode_rom[HLT][MS1] = '{default: 0, halt: 1}; // End of LDA instruction
+        microcode_rom[HLT][MS0] = '{default: 0, last_step: 1}; // Load instruction register
     end
 
     // TODO: output_register u_out_reg (to be implemented in future)

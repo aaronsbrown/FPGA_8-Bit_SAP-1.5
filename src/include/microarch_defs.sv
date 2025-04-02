@@ -44,6 +44,7 @@ typedef struct packed {
     logic oe_pc;        //CO
     logic load_pc;      //J 
     logic load_flag;    //FI
+    logic last_step;   //LS
     // logic oe_b;         //BO -- not in ben's 16bit contol word 
     
 } control_word_t;
