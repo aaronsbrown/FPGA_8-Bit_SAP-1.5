@@ -11,6 +11,7 @@ src/utils/digit_to_7seg.v
 src/utils/clock_divider.v
 
 # logic
+src/alu.sv
 src/program_counter.sv
 src/ram.sv
 src/register_instruction.sv

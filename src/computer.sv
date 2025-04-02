@@ -22,7 +22,7 @@ module computer (
     logic [3:0] counter_out, memory_address_out; // Outputs from the program counter and memory address register
     
     // Register outputs to simulate bus transceiver behavior
-    logic [7:0] o_out, a_out, b_out, ir_out, ram_out;
+    logic [7:0] o_out, a_out, b_out, ir_out, alu_out, ram_out;
     
     // Shared bus for data transfer among components
     logic [7:0] bus;
@@ -31,10 +31,12 @@ module computer (
     logic load_o, load_a, load_b, load_ir, load_pc, load_ram, load_mar;
     
     // Control signals for outputting data to the bus
-    logic oe_a, oe_ir, oe_pc, oe_ram;
+    logic oe_a, oe_alu, oe_ir, oe_pc, oe_ram;
 
     // Control signal to indicate if the CPU should halt
     logic halt;
+
+    logic [1:0] alu_op;
     
     // Instantiate the program counter with the specified address width
     program_counter #( .ADDR_WIDTH(4) ) u_program_counter (
@@ -92,12 +94,20 @@ module computer (
         .opcode(opcode),
         .operand(operand)
     );
+
+    alu u_alu (
+        .clk(clk),
+        .reset(reset),
+        .a_in(a_out),
+        .b_in(b_out),
+        .alu_op(alu_op),
+        .result_out(alu_out)
+    );
     
     // RAM module instantiation
     ram u_ram (
         .clk(clk),
         .we(load_ram),
-        .oe(oe_ram),
         .address(memory_address_out),  
         .data_in(bus),
         .data_out(ram_out)
@@ -107,6 +117,7 @@ module computer (
     assign bus =    (oe_pc)     ? counter_out : // CO
                     (oe_ram)    ? ram_out :
                     (oe_ir)     ? operand :
+                    (oe_alu)    ? alu_out :
                     (oe_a)      ? a_out : 
                     8'b0;
     
@@ -190,7 +201,9 @@ module computer (
     assign oe_a = control_word.oe_a;
     assign oe_ir = control_word.oe_ir;
     assign oe_pc = control_word.oe_pc;
+    assign oe_alu = control_word.oe_alu;
     assign oe_ram = control_word.oe_ram;
+    assign alu_op = control_word.alu_op;
     assign pc_enable = control_word.pc_enable; 
     assign halt = control_word.halt; 
 
@@ -212,28 +225,31 @@ module computer (
         microcode_rom[LDB][MS0] = '{default: 0, oe_ir: 1}; // Load instruction register
         microcode_rom[LDB][MS1] = '{default: 0, oe_ir: 1, load_mar: 1}; // Prepare to load from RAM
         microcode_rom[LDB][MS2] = '{default: 0, oe_ram: 1}; // Enable RAM output
-        microcode_rom[LDB][MS3] = '{default: 0, oe_ram: 1, load_b: 1, last_step: 1}; // Load value into register A
+        microcode_rom[LDB][MS3] = '{default: 0, oe_ram: 1, load_b: 1, last_step: 1}; // Load value into register B
         
+
+        microcode_rom[ADD][MS0] = '{default: 0, oe_ir: 1};
+        microcode_rom[ADD][MS1] = '{default: 0, oe_ir: 1, load_mar: 1}; // Load MAR with operand
+        microcode_rom[ADD][MS2] = '{default: 0, oe_ram: 1}; // Enable RAM output        
+        microcode_rom[ADD][MS3] = '{default: 0, oe_ram: 1, load_b: 1}; // Load value into register B
+        microcode_rom[ADD][MS4] = '{default: 0, oe_alu: 1, alu_op: ALU_ADD}; // Add and output
+        microcode_rom[ADD][MS5] = '{default: 0, oe_alu: 1, load_a: 1, last_step: 1}; // Load value into register A
+
+        microcode_rom[SUB][MS0] = '{default: 0, oe_ir: 1};
+        microcode_rom[SUB][MS1] = '{default: 0, oe_ir: 1, load_mar: 1}; // Load MAR with operand
+        microcode_rom[SUB][MS2] = '{default: 0, oe_ram: 1}; // Enable RAM output        
+        microcode_rom[SUB][MS3] = '{default: 0, oe_ram: 1, load_b: 1}; // Load value into register B
+        microcode_rom[SUB][MS4] = '{default: 0, oe_alu: 1, alu_op: ALU_SUB}; // Add and output
+        microcode_rom[SUB][MS5] = '{default: 0, oe_alu: 1, load_a: 1, last_step: 1}; // Load value into register A
+
+
         microcode_rom[OUTA][MS0] = '{default: 0, oe_a: 1}; // Output register A
         microcode_rom[OUTA][MS1] = '{default: 0, oe_a: 1, load_o: 1, last_step: 1}; // 
         
+
         // Halt needs two cycles to stabilize
         microcode_rom[HLT][MS0] = '{default: 0}; // stabilization cycle
         microcode_rom[HLT][MS1] = '{default: 0, halt: 1, last_step: 1}; // halt
     end
-
-    
-    
-    // TODO: alu u_alu (to be implemented in future)
-    //     .clk(clk),
-    //     .reset(reset),
-    //     .a(a_out),
-    //     .b(b_out),
-    //     .subtract(subtract),
-    //     .flag_enable(flag_enable),
-    //     .result(alu_out),
-    //     .flag_carry(flag_carry),
-    //     .flag_zero(flag_zero)
-    // );
 
 endmodule
