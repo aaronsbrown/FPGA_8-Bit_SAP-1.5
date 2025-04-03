@@ -38,7 +38,7 @@ module computer_tb;
         end
         pretty_print_assert_vec(uut.u_register_B.latched_data, 8'h22, "B Reg is 0x22");
 
-repeat (20) begin
+        repeat (100) begin
             @(posedge clk);
         end
 

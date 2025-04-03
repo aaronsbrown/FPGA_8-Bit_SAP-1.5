@@ -22,10 +22,10 @@ module top (
     // sys_reset is active-high: asserted if external reset is active (rst_n is low) or PLL is not locked
     assign sys_reset = ~rst_n || ~pll_locked;
 
-    reg [7:0] output_value;
+    wire [7:0] output_value;
     assign led = output_value;
     
-    reg [1:0] flags;
+    wire [1:0] flags;
     assign io_led = flags;
     computer u_computer (
         .clk(clk_out),
@@ -36,9 +36,9 @@ module top (
     
     seg7_display u_display (
         .clk(clk_out),
-        .reset(~rst_n),
+        .reset(sys_reset),
         .number(output_value),
-        .seg7( io_segment[6:0] ),
+        .seg7( io_segment ),
         .select(io_select)
     );
 

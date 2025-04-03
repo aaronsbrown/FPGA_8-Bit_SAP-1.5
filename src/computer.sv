@@ -134,8 +134,8 @@ module computer (
     microstep_t next_step; // Next microstep to transition to
 
     // Sequential logic for controlling the CPU's operation based on clock and reset signals
-    always_ff @(posedge clk) begin // ADD posedge reset
-        if (reset) begin // ASYNC check
+    always_ff @(posedge clk) begin 
+        if (reset) begin 
             current_state <= S_RESET; // Reset to initial state
             current_step <= MS0; // Reset to initial step
             control_word <= '{default: 0}; // Clear control word
@@ -170,9 +170,11 @@ module computer (
             end
             S_DECODE_1: begin
                 next_control_word = '{default: 0, oe_ram: 1, load_ir: 1, pc_enable: 1}; // Load instruction and enable PC
+                next_state = S_WAIT; // Move to next step
+            end
+            S_WAIT: begin
                 next_state = S_EXECUTE; // Move to next step
             end
-            
             S_EXECUTE: begin
                 next_control_word = microcode_rom[opcode][current_step]; // Fetch control word from microcode ROM
                 if (next_control_word.halt) begin

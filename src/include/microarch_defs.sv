@@ -44,27 +44,25 @@ typedef struct packed {
 } instruction_t;
 
 typedef struct packed {
-    logic halt;         //HLT  
-    logic load_mar;     //MI
-    logic load_ram;     //RI
-    logic oe_ram;       //RO
-    logic load_ir;      //II
-    logic oe_ir;        //IO
-    logic load_a;       //AI
-    logic oe_a;         //AO
-    logic oe_b;         //BO
-    logic oe_alu;       //EO
-    logic [1:0] alu_op;
-    logic load_b;       //BI
-    logic load_o;       //OI
-    logic pc_enable;    //CE
-    logic oe_pc;        //CO
-    logic load_pc;      //J 
-    logic load_flag;    //FI
-    logic last_step;   //LS
-    logic check_zero;
-    logic check_carry;
-    
-    
+    logic halt;         //#19      
+    logic last_step;    //#18     
+    logic pc_enable;    //#17       
+    logic load_pc;      //#16      
+    logic oe_pc;        //#15      
+    logic load_ir;      //#14      
+    logic oe_ir;        //#13      
+    logic load_mar;     //#12      
+    logic load_ram;     //#11      
+    logic oe_ram;       //#10      
+    logic [1:0] alu_op; //#9      
+    logic oe_alu;       //#8      
+    logic check_zero;   //#7      
+    logic check_carry;  //#6      
+    logic load_a;       //#5      
+    logic oe_a;         //#4      
+    logic load_b;       //#3      
+    logic oe_b;         //#2      
+    logic load_o;       //#1      
+
 } control_word_t;
 

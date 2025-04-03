@@ -11,8 +11,9 @@ reg [7:0] ram [0:15] = '{
     8'h1F, // contents for addresses 0-3
     8'h4E,  
     8'hE0, 
-    8'hFF, 
-    8'h00, 
+    8'h86,
+    8'hE0, 
+    8'h90,
     8'h00, 
     8'h00,  
     8'h00,  // addresses 8-11
