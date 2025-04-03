@@ -13,6 +13,7 @@ This project is a Verilog-based recreation of Ben Eater's classic breadboard 8-b
 - Load and execute simple machine code programs
 - Implement a microcoded control unit for extensible instruction handling
 - Later: explore extensions like stack support, more RAM, or additional instructions
+- Write a small Python-based assembler to support mnemonic instructions and simplify program authoring
 
 ---
 
@@ -44,7 +45,12 @@ This project is a Verilog-based recreation of Ben Eater's classic breadboard 8-b
 - [x] Instruction cycle implemented
 - [x] Program loaded from RAM
 - [x] All modules verified via simulation
-- [ ] FPGA synthesis + LED output tested
+- [x] FPGA synthesis + LED output tested
+- [x] Microcoded instruction execution verified (LDA, ADD, STA, JMP, etc.)
+- [x] FSM timing bug fixed with opcode stabilization step
+- [ ] Conditional jumps (JZ, JC) implemented and tested
+- [ ] Extended instruction set (e.g., CMP, INC, DEC)
+- [ ] Stack support and CALL/RET instructions
 
 ---
 
@@ -64,3 +70,15 @@ Each module will be individually verified via simulation using Icarus Verilog an
  • Icarus Verilog
  • GTKWave
  • Yosys + nextpnr for synthesis
+
+## 🛣️ Next Milestone: Toward SAP-2
+
+With the core instruction cycle now stable and microcoded execution working, the next major goal is to extend the CPU toward a SAP-2-style architecture as described in Malvino's *Digital Computer Electronics*. Planned features include:
+
+- Conditional jumps using flag registers (JZ, JC)
+- A CMP instruction to compare values without modifying registers
+- Stack support via a dedicated stack pointer register
+- CALL and RET instructions for rudimentary subroutine support
+- Possibly expanding the RAM space or instruction width
+
+These additions will allow the CPU to support more complex programs and branching logic, and bring it closer to the full SAP-2 feature set.

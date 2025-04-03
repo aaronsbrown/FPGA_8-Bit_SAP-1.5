@@ -173,7 +173,7 @@ module computer (
                 next_state = S_WAIT; // Move to next step
             end
             S_WAIT: begin
-                next_state = S_EXECUTE; // Move to next step
+                next_state = S_EXECUTE; // Critical delay to allow OPCODE latch
             end
             S_EXECUTE: begin
                 next_control_word = microcode_rom[opcode][current_step]; // Fetch control word from microcode ROM
