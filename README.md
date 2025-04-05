@@ -28,6 +28,7 @@ This project is a Verilog-based recreation of Ben Eater's classic breadboard 8-b
 
 ## 📂 Project Structure
 
+```text
 .
 ├── src/                  # All Verilog source modules
 ├── test/                 # Simulation testbenches
@@ -37,6 +38,7 @@ This project is a Verilog-based recreation of Ben Eater's classic breadboard 8-b
 ├── fixture/              # Sample machine code programs (.hex)
 ├── scripts/              # Build and simulation scripts
 └── README.md             # This file
+```
 
 ---
 
@@ -68,20 +70,21 @@ To run a specific simulation testbench (e.g., the LDI test):
 
 ```bash
 ./scripts/simulate.sh --tb op_LDI_tb.sv
-
+```
 (Tests typically load their specific program into RAM using `$readmemh` from the `fixture/` directory).
+
 
 🧪 **Test Strategy**
 
 Each module is individually verified via simulation using Icarus Verilog and GTKWave before integrating into the full CPU. System-level tests verify instruction execution by running small programs loaded from `.hex` files and asserting expected register states.
 
 🛠️ **Tools**
- • Icarus Verilog (Simulator)
- • GTKWave (Waveform Viewer)
- • sv2v (SystemVerilog to Verilog converter, used by scripts)
- • Yosys (Synthesis)
- • nextpnr (Place and Route for iCE40)
- • icepack/iceprog (Bitstream packing/uploading)
+ * Icarus Verilog (Simulator)
+ * GTKWave (Waveform Viewer)
+ * sv2v (SystemVerilog to Verilog converter, used by scripts)
+ * Yosys (Synthesis)
+ * nextpnr (Place and Route for iCE40)
+ * icepack/iceprog (Bitstream packing/uploading)
 
 ---
 
