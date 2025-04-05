@@ -4,6 +4,7 @@
 src/clock/pll.v
 
 # utilities
+test/test_utilities_pkg.sv
 src/utils/timescale.v 
 src/utils/button_conditioner.v
 src/utils/seg7_display.v
