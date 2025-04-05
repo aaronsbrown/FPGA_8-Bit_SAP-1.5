@@ -1,3 +1,8 @@
+// TODO conver to a package rather than an import file
+// TODO parameterize the data width
+// TODO parameterize the instruction / address width
+
+
 typedef enum logic [3:0] {
         NOP =   4'b0000,
         LDA =   4'b0001, // tested
