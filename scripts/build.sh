@@ -74,7 +74,7 @@ PROJECT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 # --- Load Verilog Files ---
 if [[ ${#VERILOG_FILES[@]} -eq 0 ]]; then
-    FILE_LIST="$PROJECT_DIR/src/_files.f"
+    FILE_LIST="$PROJECT_DIR/src/_files_synth.f"
     if [[ -f "$FILE_LIST" ]]; then
         log_info "Loading Verilog sources from: $FILE_LIST"
         # Read each line, trim whitespace, and add if not empty/comment.
@@ -114,18 +114,27 @@ mkdir -p "$LOG_DIR"
 # --- Optional sv2v Conversion ---
 FINAL_VERILOG_FILES=()
 if [ "$USE_SV2V" = true ]; then
-    log_info "sv2v conversion enabled. Converting SystemVerilog files..."
+    log_info "sv2v conversion enabled. Converting all SystemVerilog files in one invocation..."
+    # Collect all .sv files into an array.
+    SV_FILES=()
     for file in "${ABS_VERILOG_FILES[@]}"; do
         if [[ "$file" == *.sv ]]; then
-            base=$(basename "$file" .sv)
-            converted_file="$BUILD_DIR/${base}.v"
-            log_info "Converting $file to $converted_file"
-            sv2v "$file" > "$converted_file"
-            FINAL_VERILOG_FILES+=("$converted_file")
+            SV_FILES+=("$file")
         else
             FINAL_VERILOG_FILES+=("$file")
         fi
     done
+
+     # Echo all files that will be converted by sv2v.
+    for file in "${SV_FILES[@]}"; do
+        log_info "sv2v will convert: $file"
+    done
+    
+    # Convert all SystemVerilog files together to support packages.
+    combined_sv2v_file="$BUILD_DIR/combined.v"
+    log_info "Converting ${#SV_FILES[@]} SystemVerilog files to $combined_sv2v_file"
+    sv2v "${SV_FILES[@]}" > "$combined_sv2v_file"
+    FINAL_VERILOG_FILES+=("$combined_sv2v_file")
 else
     FINAL_VERILOG_FILES=("${ABS_VERILOG_FILES[@]}")
 fi
