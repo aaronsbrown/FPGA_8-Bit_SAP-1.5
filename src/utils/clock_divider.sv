@@ -6,9 +6,9 @@ module clock_divider #(
     output  reg    clk_out
 );
 
-    reg [25:0] counter;
+    reg [32:0] counter;
     
-    always @(posedge clk_in or posedge reset) begin
+    always_ff @(posedge clk_in) begin
         if (reset) begin
             counter <= 0;
             clk_out <= 0;

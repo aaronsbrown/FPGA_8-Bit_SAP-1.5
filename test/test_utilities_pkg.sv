@@ -18,7 +18,7 @@ package test_utils_pkg;
     end
   endtask
 
-  parameter int RAM_SIZE_BYTES = 16;
+  parameter int RAM_SIZE_BYTES = 16; // TODO MOVE TO constants package
   task clear_ram;
     input int start_addr;
     input int end_addr;
@@ -33,23 +33,6 @@ package test_utils_pkg;
     end
   endtask
   
-  // Task to preload a small program into RAM for testing
-  // Assumes the testbench has a `uut` instance with a publicly accessible `u_ram.mem[]` array
-  task load_program;
-    input [7:0] program_data [0:RAM_SIZE_BYTES-1];
-    input int start_addr;
-    input int program_size;
-    int i;
-    begin 
-      for (i = 0; i < program_size; i = i + 1) begin
-        if ((start_addr + i) < RAM_SIZE_BYTES) begin
-          `UUT_PATH.u_ram.ram[start_addr + i] = program_data[i];
-        end else begin
-          $display("Warning: Skipping out-of-bounds write to RAM at address %0d", start_addr + i);
-        end
-      end
-    end
-  endtask
 
   // Task to run simulation until halt is asserted or a cycle timeout occurs
   task run_until_halt;
@@ -83,12 +66,16 @@ package test_utils_pkg;
   task reset_and_wait;
     input int cycles;
     begin
+      
       reset = 1;
-      repeat (2) @(posedge clk);
+      
+      @(posedge clk);
+      
+      @(negedge clk);
       reset = 0;
+      
       repeat (cycles) @(posedge clk);
     end
   endtask
-
 
 endpackage : test_utils_pkg

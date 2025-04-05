@@ -7,9 +7,6 @@ module computer_tb;
   reg reset;
   wire [7:0] out_val; // Output value from the DUT
   
-  // Declare program memory array at the module level
-  logic [7:0] prog [0:15];
-   
   // Instantiate the DUT (assumed to be named 'computer')
   computer uut (
         .clk(clk),
@@ -26,23 +23,10 @@ module computer_tb;
   // Testbench stimulus
   initial begin
     
-    integer i;
-    
-    // Dump VCD waveforms for debugging
     $dumpfile("waveform.vcd");
     $dumpvars(0, computer_tb);
 
-    clear_ram(0, 15); 
-
-    // Program
-    prog[0] = 8'h1F; // LDA ram[15]
-    prog[1] = 8'hFF; // HLT opcode
-
-    // Data
-    uut.u_ram.ram[15] = 8'hAB;
-
-    // Load the program into RAM starting at address 0, program size 3 bytes.
-    load_program(prog, 0, 3);
+    $readmemh("../fixture/LDA.hex", uut.u_ram.ram);
     uut.u_ram.dump();
     
     reset_and_wait(0);
@@ -50,7 +34,7 @@ module computer_tb;
 
     inspect_register(uut.u_register_A.latched_data, 8'hAB, "A");
 
-    $display("\033[0;32mLDA instruction test completed successfully.\033[0m");
+    $display("\033[0;32mLDB instruction test completed successfully.\033[0m");
     $finish;
   end
 
