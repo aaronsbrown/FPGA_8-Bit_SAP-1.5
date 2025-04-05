@@ -6,14 +6,15 @@ This project is a Verilog-based recreation of Ben Eater's classic breadboard 8-b
 
 ## 🧠 Project Goals
 
-- Faithfully replicate Ben Eater's 8-bit CPU on an FPGA
-- Use Verilog to build each module (registers, ALU, RAM, control unit, etc.)
-- Mirror the shared 8-bit bus architecture with tri-state logic
-- Simulate using Icarus Verilog + GTKWave
-- Load and execute simple machine code programs
-- Implement a microcoded control unit for extensible instruction handling
-- Later: explore extensions like stack support, more RAM, or additional instructions
-- Write a small Python-based assembler to support mnemonic instructions and simplify program authoring
+- Faithfully replicate Ben Eater's 8-bit CPU on an FPGA.
+- Use Verilog/SystemVerilog to build each module (registers, ALU, RAM, control unit, etc.).
+- Mirror the shared 8-bit bus architecture using multiplexers controlled by output enables.
+- Simulate using Icarus Verilog + GTKWave.
+- Load and execute simple machine code programs.
+- Implement a microcoded control unit for extensible instruction handling.
+- Standardize on synchronous design practices (clocking, reset).
+- Later: explore extensions like stack support, more RAM, additional instructions, parameterization.
+- Write a small Python-based assembler to support mnemonic instructions and simplify program authoring.
 
 ---
 
@@ -21,7 +22,7 @@ This project is a Verilog-based recreation of Ben Eater's classic breadboard 8-b
 
 - FPGA Board: Alchitry Cu (Lattice iCE40 HX)
 - Expansion Board: Alchitry Io (optional for buttons, LEDs)
-- No external RAM, just internal FPGA logic blocks
+- No external RAM, just internal FPGA BRAM/logic blocks.
 
 ---
 
@@ -32,7 +33,8 @@ This project is a Verilog-based recreation of Ben Eater's classic breadboard 8-b
 ├── test/                 # Simulation testbenches
 ├── build/                # Output directory for VVP and waveform logs
 ├── constraints/          # Pin constraints for FPGA synthesis
-├── docs/0_schematics/    # Reference schematics based on Ben Eater’s diagrams
+├── docs/                 # Design notes, diagrams, analysis
+├── fixture/              # Sample machine code programs (.hex)
 ├── scripts/              # Build and simulation scripts
 └── README.md             # This file
 
@@ -42,43 +44,58 @@ This project is a Verilog-based recreation of Ben Eater's classic breadboard 8-b
 
 - [x] Project initialized
 - [x] Bus + register structure defined
-- [x] Instruction cycle implemented
-- [x] Program loaded from RAM
-- [x] All modules verified via simulation
+- [x] Consistent synchronous reset strategy implemented
+- [x] ALU logic corrected for combinational flags / registered output
+- [x] Instruction cycle FSM implemented
+- [x] Program loading via `$readmemh` in simulation
+- [x] Most core modules verified via simulation (registers, PC, RAM, ALU)
 - [x] FPGA synthesis + LED output tested
-- [x] Microcoded instruction execution verified (LDA, ADD, STA, JMP, etc.)
-- [x] FSM timing bug fixed with opcode stabilization step
-- [ ] Conditional jumps (JZ, JC) implemented and tested
-- [ ] Extended instruction set (e.g., CMP, INC, DEC)
-- [ ] Stack support and CALL/RET instructions
+- [x] Microcoded instruction execution verified (LDA, LDB, LDI, ADD, STA, JMP, OUTA, HLT)
+- [x] FSM timing bug fixed with opcode stabilization step (`S_WAIT`)
+- [ ] **Implement Flags Register** for state holding (major prerequisite for below)
+- [ ] Implement `update_flags` control logic in microcode
+- [ ] Implement and test conditional jumps (JZ, JC) using Flags Register
+- [ ] Implement and test `CMP` instruction
+- [ ] Add further tests for logic instructions (AND, OR)
+- [ ] Add extended instruction set (e.g., INC, DEC)
+- [ ] Add stack support and CALL/RET instructions
 
 ---
 
 ## 🔧 Simulation
 
-To run a simulation:
+To run a specific simulation testbench (e.g., the LDI test):
 
 ```bash
-./scripts/simulate.sh --tb test/computer_tb.sv
-```
+./scripts/simulate.sh --tb op_LDI_tb.sv
 
-🧪 Test Strategy
+(Tests typically load their specific program into RAM using `$readmemh` from the `fixture/` directory).
 
-Each module will be individually verified via simulation using Icarus Verilog and GTKWave before integrating into the full CPU.
+🧪 **Test Strategy**
 
-🛠️ Tools
- • Icarus Verilog
- • GTKWave
- • Yosys + nextpnr for synthesis
+Each module is individually verified via simulation using Icarus Verilog and GTKWave before integrating into the full CPU. System-level tests verify instruction execution by running small programs loaded from `.hex` files and asserting expected register states.
 
-## 🛣️ Next Milestone: Toward SAP-2
+🛠️ **Tools**
+ • Icarus Verilog (Simulator)
+ • GTKWave (Waveform Viewer)
+ • sv2v (SystemVerilog to Verilog converter, used by scripts)
+ • Yosys (Synthesis)
+ • nextpnr (Place and Route for iCE40)
+ • icepack/iceprog (Bitstream packing/uploading)
 
-With the core instruction cycle now stable and microcoded execution working, the next major goal is to extend the CPU toward a SAP-2-style architecture as described in Malvino's *Digital Computer Electronics*. Planned features include:
+---
 
-- Conditional jumps using flag registers (JZ, JC)
-- A CMP instruction to compare values without modifying registers
-- Stack support via a dedicated stack pointer register
-- CALL and RET instructions for rudimentary subroutine support
-- Possibly expanding the RAM space or instruction width
+## 🛣️ Next Milestone: Conditional Logic & SAP-2 Features
 
-These additions will allow the CPU to support more complex programs and branching logic, and bring it closer to the full SAP-2 feature set.
+With the core instruction cycle stable and ALU flags generating correctly (combinationally), the next critical step is implementing the **Flags Register** to properly latch and hold the C, Z, N status between instructions. This state-holding mechanism is essential for reliable conditional operations.
+
+Once the Flags Register is implemented and controlled via microcode:
+- Implement and test conditional jumps (`JZ`, `JC`).
+- Implement and test a `CMP` instruction (Compare, affects flags like SUB).
+
+Subsequent goals move toward a SAP-2-style architecture as described in Malvino's *Digital Computer Electronics*:
+- Stack support via a dedicated stack pointer register.
+- `CALL` and `RET` instructions for rudimentary subroutine support.
+- Possibly expanding the RAM space or instruction width via parameterization.
+
+These additions will allow the CPU to support more complex programs and branching logic.
