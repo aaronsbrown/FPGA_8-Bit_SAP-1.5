@@ -1,5 +1,6 @@
 `timescale 1ns / 1ps
-`include "test_utilities.sv"
+// `include "test_utilities.sv"
+import test_utils_pkg::*;
 
 module computer_tb;
     // Declare testbench signals
