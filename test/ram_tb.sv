@@ -1,5 +1,5 @@
 `timescale 1ns / 1ps
-`include "test_utilities.sv"
+import test_utils_pkg::*; 
 
 module ram_tb;
     reg clk;
@@ -12,7 +12,6 @@ module ram_tb;
     ram uut (
         .clk(clk),
         .we(we),
-        .oe(oe),
         .address(address),
         .data_in(data_in),
         .data_out(data_out)
@@ -29,7 +28,6 @@ module ram_tb;
 
         // Initialize control signals
         we = 0;
-        oe = 0;
         address = 4'b0000;
         data_in = 8'h00;
 
@@ -47,23 +45,12 @@ module ram_tb;
         @(negedge clk);
         we = 0;
 
-        // Wait one cycle
+        // account for stability time
         @(posedge clk);
 
-        // Read from address 0x3
-        @(negedge clk);
-        oe = 1;
-        
-        @(posedge clk);
         @(posedge clk);
         $display("Read data: %h (expected AB)", data_out);
         pretty_print_assert_vec(data_out, 8'hAB, "Data Out is hAB");
-        
-        @(negedge clk);
-        oe = 0;
-        
-        @(posedge clk);
-
         
         @(negedge clk);
         address = 4'hA; // Write 0xCD to address 0xA
@@ -75,18 +62,12 @@ module ram_tb;
         @(negedge clk);
         we = 0;
 
+        // account for stability time
         @(posedge clk);
-
-        @(negedge clk);
-        oe = 1;
         
-        @(posedge clk);
         @(posedge clk);
         $display("Read data: %h (expected CD)", data_out);
         pretty_print_assert_vec(data_out, 8'hCD, "Data Out is hCD");
-
-        @(negedge clk);
-        oe = 0;
 
         $display("RAM test complete at time %0t", $time);
         $finish;

@@ -26,7 +26,7 @@ module computer_tb;
     $dumpfile("waveform.vcd");
     $dumpvars(0, computer_tb);
 
-    $readmemh("../fixture/LDA.hex", uut.u_ram.ram);
+    $readmemh("../fixture/LDA.hex", uut.u_ram.mem);
     uut.u_ram.dump();
     
     reset_and_wait(0);

@@ -25,7 +25,7 @@ package test_utils_pkg;
     begin
       for (int i = start_addr; i <= end_addr; i++) begin
         if (i < RAM_SIZE_BYTES) begin
-          `UUT_PATH.u_ram.ram[i] = 8'h00;
+          `UUT_PATH.u_ram.mem[i] = 8'h00;
         end else begin
           $display("Warning: clear_ram attempted to access out-of-bounds address %0d", i);
         end

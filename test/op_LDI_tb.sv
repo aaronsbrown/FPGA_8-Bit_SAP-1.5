@@ -1,5 +1,5 @@
 `timescale 1ns/1ps
-import test_utils_pkg::*; // Import test utility tasks
+import test_utils_pkg::*; 
 
 module computer_tb;
 
@@ -27,7 +27,7 @@ module computer_tb;
     $dumpfile("waveform.vcd");
     $dumpvars(0, computer_tb);
 
-    $readmemh("../fixture/LDI.hex", uut.u_ram.ram);
+    $readmemh("../fixture/LDI.hex", uut.u_ram.mem);
     uut.u_ram.dump();
     
     reset_and_wait(0);

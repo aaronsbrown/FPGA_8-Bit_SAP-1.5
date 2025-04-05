@@ -1,5 +1,5 @@
 `timescale 1ns / 1ps
-`include "test_utilities.sv"
+import test_utils_pkg::*; 
 
 module program_counter_tb;
     logic clk;

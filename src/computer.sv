@@ -104,7 +104,7 @@ module computer (
         .a_in(a_out),
         .b_in(b_out),
         .alu_op(alu_op),
-        .result_out(alu_out),
+        .latched_result(alu_out),
         .zero_flag(flag_zero),
         .carry_flag(flag_carry)
     );
@@ -145,6 +145,8 @@ module computer (
             control_word <= next_control_word; // Update control word
         end
     end
+
+    // TODO add a flags register
 
     // Combinational logic to determine the next state and control word based on the current step
     always_comb begin 
