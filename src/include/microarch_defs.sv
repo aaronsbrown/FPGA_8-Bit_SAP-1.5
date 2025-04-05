@@ -1,13 +1,13 @@
 typedef enum logic [3:0] {
         NOP =   4'b0000,
-        LDA =   4'b0001,
-        LDB =   4'b0010,
+        LDA =   4'b0001, // tested
+        LDB =   4'b0010, // tested
         ADD =   4'b0011,
         SUB =   4'b0100,
         AND =   4'b0101,
         OR  =   4'b0110,
         STA =   4'b0111,
-        LDI =   4'b1000,
+        LDI =   4'b1000, // tested
         JMP =   4'b1001,
         JC  =   4'b1010,
         JZ  =   4'b1011,
