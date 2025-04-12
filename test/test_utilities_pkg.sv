@@ -1,3 +1,6 @@
+import arch_defs_pkg::*;
+
+
 `ifndef UUT_PATH
   `define UUT_PATH uut // Default fallback
 `endif
@@ -6,28 +9,30 @@ package test_utils_pkg;
 
   // Task to compare two 32-bit vectors.
   task pretty_print_assert_vec;
+    // Keep using fixed width arguments
     input [31:0] actual;
     input [31:0] expected;
     input string msg;
     begin
+      // Comparison '===' works correctly even if actual vectors are smaller
+      // (they get implicitly zero-extended).
       if (actual !== expected) begin
-        $display("\033[0;31mAssertion Failed: %s. Actual: %0b, Expected: %0b\033[0m", msg, actual, expected);
+        $display("\033[0;31mAssertion Failed: %s. Actual: %h, Expected: %h\033[0m", msg, actual, expected); // Use %h for hex
       end else begin
         $display("\033[0;32mAssertion Passed: %s\033[0m", msg);
       end
     end
   endtask
 
-  parameter int RAM_SIZE_BYTES = 16; // TODO MOVE TO constants package
   task clear_ram;
     input int start_addr;
     input int end_addr;
     begin
       for (int i = start_addr; i <= end_addr; i++) begin
-        if (i < RAM_SIZE_BYTES) begin
+        if (i < RAM_DEPTH) begin
           `UUT_PATH.u_ram.mem[i] = 8'h00;
         end else begin
-          $display("Warning: clear_ram attempted to access out-of-bounds address %0d", i);
+          $display("Warning: clear_ram attempted to access out-of-bounds address %0d (RAM Depth: %0d)", i, RAM_DEPTH);
         end
       end
     end
@@ -55,11 +60,25 @@ package test_utils_pkg;
   endtask
 
   task inspect_register;
-    input [7:0] actual;
-    input [7:0] expected;
+    // Use fixed width for task arguments
+    input [31:0] actual;
+    input [31:0] expected;
     input string name;
-    begin
-      pretty_print_assert_vec(actual, expected, {name, " register check"});
+    input int expected_width;
+    logic [31:0] mask;
+  begin
+      // Create a mask to compare only relevant bits
+      mask = (expected_width == 32) ? 32'hFFFFFFFF : (32'h1 << expected_width) - 1;
+      // Compare only the lower 'expected_width' bits
+      if ((actual & mask) !== (expected & mask)) begin
+           $display("\033[0;31mAssertion Failed: %s (%0d bits). Actual: %h, Expected: %h\033[0m",
+                    name, expected_width, actual & mask, expected & mask);
+      end else begin
+           $display("\033[0;32mAssertion Passed: %s (%0d bits) = %h\033[0m",
+                    name, expected_width, actual & mask);
+      end
+      // Call the original pretty_print_assert_vec if you want the full binary view too
+      // pretty_print_assert_vec(actual & mask, expected & mask, {name, " register check"});
     end
   endtask
 

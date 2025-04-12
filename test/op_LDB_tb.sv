@@ -1,11 +1,12 @@
 `timescale 1ns/1ps
-import test_utils_pkg::*; // Import test utility tasks
+import test_utils_pkg::*; 
+import arch_defs_pkg::*; 
 
 module computer_tb;
 
   reg clk;
   reg reset;
-  wire [7:0] out_val; // Output value from the DUT
+  wire [DATA_WIDTH-1:0] out_val; // Output value from the DUT
  
   // Instantiate the DUT (assumed to be named 'computer')
   computer uut (
@@ -32,7 +33,7 @@ module computer_tb;
     reset_and_wait(0);
     run_until_halt(50);
 
-    inspect_register(uut.u_register_B.latched_data, 8'h11, "B");
+    inspect_register(uut.u_register_B.latched_data, 8'h11, "B", DATA_WIDTH);
 
     $display("\033[0;32mLDB instruction test completed successfully.\033[0m");
     $finish;
