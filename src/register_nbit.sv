@@ -1,11 +1,13 @@
+import arch_defs_pkg::*;
+
 module register_nbit #(
-    parameter N = 8
+    parameter N = DATA_WIDTH
 ) (
-    input             clk,
-    input             reset,
-    input             load,
-    input    [N-1:0]  data_in,
-    output  reg [N-1:0] latched_data
+    input                   clk,
+    input                   reset,
+    input                   load,
+    input           [N-1:0] data_in,
+    output  logic   [N-1:0] latched_data
 );
 
     always_ff @(posedge clk) begin

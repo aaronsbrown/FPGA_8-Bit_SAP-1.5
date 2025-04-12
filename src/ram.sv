@@ -1,17 +1,15 @@
-module ram # (
-    parameter ADDRESS_WIDTH = 4,
-    parameter DATA_WIDTH = 8
+import arch_defs_pkg::*;
 
-) (
+module ram (
     input   logic clk,
     input   logic we,
-    input   logic [ADDRESS_WIDTH-1:0] address, // 4-bit address (16 bytes)  
+    input   logic [ADDR_WIDTH-1:0] address, // 4-bit address (16 bytes)  
     input   logic [DATA_WIDTH-1:0] data_in,
     output  logic [DATA_WIDTH-1:0] data_out
 );
 
     // Declare the RAM register without an initializer
-    logic [DATA_WIDTH-1:0] mem [0: (1 << ADDRESS_WIDTH) - 1]; 
+    logic [DATA_WIDTH-1:0] mem [0: RAM_DEPTH - 1]; 
     
     logic [DATA_WIDTH-1: 0] data_out_i;
 
@@ -28,9 +26,11 @@ module ram # (
     task dump;
       integer j;
       begin
-        for (j = 0; j < 16; j = j + 1) begin
+        $display("--- RAM Content Dump ---");
+        for (j = 0; j < RAM_DEPTH; j = j + 1) begin
           $display("RAM[%0d] = %02h", j, mem[j]);
         end
+        $display("--- End RAM Dump ---");
       end
     endtask
 

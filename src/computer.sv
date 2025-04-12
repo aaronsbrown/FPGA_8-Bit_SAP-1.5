@@ -1,4 +1,4 @@
-`include "include/microarch_defs.sv"
+import arch_defs_pkg::*;
 
 // This module implements a simple microcoded CPU architecture. It includes a program counter, registers, 
 // a RAM interface, and a microcode ROM to control the CPU's operations based on opcodes and microsteps.
@@ -6,7 +6,7 @@
 module computer (
     input wire clk,
     input wire reset, 
-    output wire [7:0] out_val,
+    output wire [DATA_WIDTH-1:0] out_val,
     output wire [1:0] cpu_flags
 );
 
@@ -15,18 +15,19 @@ module computer (
     control_word_t next_control_word = '{default: 0};
 
     // Microcode instruction format
-    logic [3:0] opcode, operand; // Opcode and operand for instruction processing
+    logic [OPCODE_WIDTH-1:0] opcode; 
+    logic [OPERAND_WIDTH-1:0] operand; // Opcode and operand for instruction processing
     
     // Control signals for enabling/disabling the program counter
     logic pc_enable;
     
-    logic [3:0] counter_out, memory_address_out; // Outputs from the program counter and memory address register
+    logic [ADDR_WIDTH-1:0] counter_out, memory_address_out; // Outputs from the program counter and memory address register
     
     // Register outputs to simulate bus transceiver behavior
-    logic [7:0] o_out, a_out, b_out, ir_out, alu_out, ram_out;
+    logic [DATA_WIDTH-1:0] o_out, a_out, b_out, ir_out, alu_out, ram_out;
     
     // Shared bus for data transfer among components
-    logic [7:0] bus;
+    logic [DATA_WIDTH-1:0] bus;
     
     // Control signals for loading data from the bus into registers
     logic load_o, load_a, load_b, load_ir, load_pc, load_ram, load_mar;
@@ -40,7 +41,7 @@ module computer (
     logic [1:0] alu_op;
     
     // Instantiate the program counter with the specified address width
-    program_counter #( .ADDR_WIDTH(4) ) u_program_counter (
+    program_counter u_program_counter (
         .clk(clk),
         .reset(reset),
         .enable(pc_enable),
@@ -51,7 +52,7 @@ module computer (
 
     // Output register for holding the output value
     assign out_val = o_out;
-    register_nbit #( .N(8) ) u_output_register (
+    register_nbit #( .N(DATA_WIDTH) ) u_output_register (
         .clk(clk),
         .reset(reset),
         .load(load_o),
@@ -60,7 +61,7 @@ module computer (
     );
     
     // Register A for holding one of the operands
-    register_nbit #( .N(8) ) u_register_A (
+    register_nbit #( .N(DATA_WIDTH) ) u_register_A (
         .clk(clk),
         .reset(reset),
         .load(load_a),
@@ -69,7 +70,7 @@ module computer (
     );
 
     // Register B for holding another operand
-    register_nbit #( .N(8) ) u_register_B (
+    register_nbit #( .N(DATA_WIDTH) ) u_register_B (
         .clk(clk),
         .reset(reset),
         .load(load_b),
@@ -78,11 +79,11 @@ module computer (
     );
 
     // Memory address register for RAM operations
-    register_nbit #( .N(4) ) u_register_memory_address (
+    register_nbit #( .N(ADDR_WIDTH) ) u_register_memory_address (
         .clk(clk),
         .reset(reset),
         .load(load_mar),
-        .data_in(bus[3:0]),
+        .data_in(bus[ADDR_WIDTH-1:0]),
         .latched_data(memory_address_out)
     );
 
@@ -121,12 +122,12 @@ module computer (
     );
 
     // Tri-state bus logic modeled using a priority multiplexer
-    assign bus =    (oe_pc)     ? counter_out : // CO
+    assign bus =    (oe_pc)     ? { {(DATA_WIDTH-ADDR_WIDTH){1'b0} }, counter_out } : // CO
                     (oe_ram)    ? ram_out :
-                    (oe_ir)     ? {4'b0000, operand} :
+                    (oe_ir)     ? { {(DATA_WIDTH-OPERAND_WIDTH){1'b0} }, operand } :
                     (oe_alu)    ? alu_out :
                     (oe_a)      ? a_out : 
-                    8'b0;
+                    { DATA_WIDTH {1'b0} };
     
     fsm_state_t current_state = S_RESET; // Current microstep in execution
     fsm_state_t next_state = S_RESET; // Next microstep to transition to

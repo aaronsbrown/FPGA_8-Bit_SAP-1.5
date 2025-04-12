@@ -1,12 +1,12 @@
-`include "include/microarch_defs.sv"
+import arch_defs_pkg::*;
 
 module register_instruction (
-    input   logic           clk,
-    input   logic           reset,
-    input   logic           load,
-    input   logic   [7:0]   data_in,
-    output  opcode_t        opcode,
-    output  logic   [3:0]   operand
+    input   logic                       clk,
+    input   logic                       reset,
+    input   logic                       load,
+    input   logic   [DATA_WIDTH-1:0]    data_in,
+    output  opcode_t                    opcode,
+    output  logic   [OPERAND_WIDTH-1:0] operand
 );
 
     instruction_t instruction;

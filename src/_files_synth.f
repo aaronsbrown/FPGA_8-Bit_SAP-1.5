@@ -10,6 +10,9 @@ src/utils/seg7_display.v
 src/utils/digit_to_7seg.v
 src/utils/clock_divider.sv
 
+# core
+src/core/arch_defs_pkg.sv
+
 # logic
 src/alu.sv
 src/program_counter.sv
