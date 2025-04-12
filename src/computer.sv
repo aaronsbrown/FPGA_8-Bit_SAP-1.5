@@ -7,7 +7,7 @@ module computer (
     input wire clk,
     input wire reset, 
     output wire [DATA_WIDTH-1:0] out_val,
-    output wire [1:0] cpu_flags
+    output wire [2:0] cpu_flags
 );
 
     // Control words are initialized to zero to avoid 'x' propagation in the system.
@@ -99,6 +99,7 @@ module computer (
 
     logic flag_zero;
     logic flag_carry;
+    logic flag_negative;
     alu u_alu (
         .clk(clk),
         .reset(reset),
@@ -107,10 +108,14 @@ module computer (
         .alu_op(alu_op),
         .latched_result(alu_out),
         .zero_flag(flag_zero),
-        .carry_flag(flag_carry)
+        .carry_flag(flag_carry),
+        .negative_flag(flag_negative)
     );
-    assign cpu_flags[1] = flag_carry;
+    
     assign cpu_flags[0] = flag_zero;
+    assign cpu_flags[1] = flag_carry;
+    assign cpu_flags[2] = flag_negative;
+    
     
     // RAM module instantiation
     ram u_ram (

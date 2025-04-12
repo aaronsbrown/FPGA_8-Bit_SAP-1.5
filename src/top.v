@@ -2,7 +2,7 @@ module top (
     input clk,
     input rst_n,
     output [7:0] led,
-    output [1:0] io_led,
+    output [2:0] io_led,
     output [6:0] io_segment,
     output [3:0] io_select
 );
@@ -25,7 +25,7 @@ module top (
     wire [7:0] output_value;
     assign led = output_value;
     
-    wire [1:0] flags;
+    wire [2:0] flags;
     assign io_led = flags;
     computer u_computer (
         .clk(clk_out),

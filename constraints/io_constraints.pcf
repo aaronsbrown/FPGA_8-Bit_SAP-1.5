@@ -1,6 +1,6 @@
 set_io io_led[0] G14
 set_io io_led[1] F14
-#set_io io_led[2] E12
+set_io io_led[2] E12
 #set_io io_led[3] E14
 #set_io io_led[4] D14
 #set_io io_led[5] C14
