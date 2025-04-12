@@ -35,24 +35,9 @@ module ram (
     endtask
 
 `ifndef SIMULATION
-    // For synthesis (or non-simulation), initialize RAM with the hardcoded values.
     initial begin
-        mem[0]  = 8'h1F;
-        mem[1]  = 8'h4E;
-        mem[2]  = 8'hE0;
-        mem[3]  = 8'h86;
-        mem[4]  = 8'hE0;
-        mem[5]  = 8'h90;
-        mem[6]  = 8'h00;
-        mem[7]  = 8'h00;
-        mem[8]  = 8'h00;
-        mem[9]  = 8'h00;
-        mem[10] = 8'h00;
-        mem[11] = 8'h00;
-        mem[12] = 8'h00;
-        mem[13] = 8'h00;
-        mem[14] = 8'h0A;
-        mem[15] = 8'h0F;
+        // Synthesis tool reads this file during compilation
+        $readmemh("fixture/default_program_synth.hex", mem);
     end
 `endif
 
