@@ -231,6 +231,82 @@ Use simulator system tasks like `$readmemh("filename.hex", uut.ram_instance.mem_
 - **Parameters:** (`parameter WIDTH = 8`) Allow creating reusable, configurable modules (e.g., registers, ALU, RAM of different sizes). Defined within a module using `#(...)` or passed during instantiation.
 - **Packages:** (`package ... endpackage`) Provide a dedicated namespace for shared definitions (parameters, typedefs like enums/structs). Imported (`import pkg::*;`) instead of using `` ```include ``. Cleaner, prevents namespace collisions, better dependency management than `` ```include ``. Recommended for centralizing architecture definitions (data widths, address widths, instruction types, control word structs).
 
+Absolutely! That's a critical piece of the puzzle that led to the correct timing behavior. Let's add a section for that specific fix to the `field_notes.md` summary.
+
+---
+
+### 🐞 Debugging Control Signal Timing (Registered vs. Combinational)
+
+**Problem:** Waveforms showed register outputs (like `a_out` after `LDA`) updating one cycle later than expected based on the microcode steps. For example, `load_a` (intended for LDA MS3 / Cycle 9) was only active during Cycle 10, causing `a_out` to latch at the end of Cycle 10 instead of Cycle 9.
+
+**Analysis & Insight:**
+The root cause was that the control signals (`load_a`, `oe_ram`, etc.) were being assigned based on a **registered** version of the control word (`control_word`).
+
+1. **Previous Logic:**
+    - An `always_comb` block calculated `next_control_word` based on the current state/step.
+    - An `always_ff` block latched `next_control_word` into `control_word` at the end of each cycle.
+    - Control signals were assigned like `assign load_a = control_word.load_a;`.
+2. **The Delay:** This introduced a one-cycle pipeline delay. The control signals needed for microstep `MSn` (occurring during Cycle `N`) were based on the calculation done during microstep `MS(n-1)` (Cycle `N-1`) and only became active during Cycle `N+1`.
+
+**Solution:**
+Modified the control signal generation to be **combinational**, removing the registered `control_word` intermediate step for outputs.
+
+1. **Revised Logic:**
+    - The `always_comb` block still calculates `next_control_word` based on the current state/step. This struct now directly represents the control signals that should be active *during the current cycle*.
+    - The sequential `always_ff` block *only* updates the state registers (`current_state`, `current_step`). The registered `control_word` was removed or bypassed for output generation.
+    - Control signals are now assigned directly from the combinational struct: `assign load_a = next_control_word.load_a;`, etc.
+
+**Result:**
+Control signals (like `load_a`) now become active *during* the correct microstep cycle as determined by the FSM state and microcode lookup. This aligns the control signal assertion with the cycle where the action is intended, matching standard synchronous FSM design principles (where outputs are typically a function of the current state). This fixed the timing discrepancy and allowed subsequent testbench timing analysis to be based on the correct Fetch + Execute cycle counts.
+
+**Key Takeaway:**
+Control signals intended to enable actions *within* the current clock cycle should typically be generated combinationally based on the current state/inputs. Introducing unnecessary pipeline stages (like registering the control word before assigning outputs) can delay actions, complicate timing analysis, and make implementing features like conditional logic significantly harder.
+
+---
+
+Okay, let's summarize the key points from our debugging session about testbench timing and register updates for your `field_notes.md`. This was a great discussion that really dug into the nuances of synchronous design simulation!
+
+Here's a draft integrating the insights, formatted in Markdown. You can place this under a new heading in your "Debugging Journey" or "Key Concepts" section.
+
+---
+
+### 🐞 Debugging Testbench Timing for Register Updates
+
+**Problem:** Assertions in testbenches (like checking Register A after an `LDA`) were failing, even when the testbench seemed to wait for the correct number of clock cycles calculated from the instruction's Fetch + Execute duration (e.g., 9 cycles for LDA). The register output appeared to update one cycle later than initially expected based *only* on the instruction cycle count.
+
+**Analysis & Insight:**
+The core confusion stemmed from differentiating between the **DUT's execution timeline** and the precise moment a **testbench can observe state changes**.
+
+1. **Synchronous Register Behavior:** Standard positive edge-triggered flip-flops (like those in `register_nbit` inferred by `always_ff @(posedge clk)`) operate as follows:
+    - **Sampling:** They "look at" their data input (`D`) and enable input (`load`) just *before* the `posedge clk`.
+    - **Latching:** The internal state *changes* based on the sampled inputs precisely *on* the `posedge clk`. This is the "action" completing.
+    - **Output Update:** The register's output (`Q` or `latched_data`) reflects this new internal state *after* the `posedge clk` (following a small clock-to-Q delay).
+
+2. **Testbench `repeat(N)` Behavior:** The statement `repeat(N) @(posedge clk);` waits for exactly N positive clock edges to occur *starting from the current simulation time*. It finishes *immediately after* the Nth edge occurs.
+
+3. **The Timing Mismatch:**
+    - If an instruction takes `N` cycles (e.g., LDA takes 9 cycles, C1-C9), its final state update (latching the result) occurs on the clock edge *ending* the Nth cycle (the edge between C9 and C10). Let's call this Edge #N.
+    - Waiting `repeat(N) @(posedge clk)` in the testbench brings the simulation time only to the *start* of the Nth cycle (Edge #(N-1)). The latching event hasn't happened yet.
+    - To observe the result *after* the latching event on Edge #N, the testbench must wait for that specific edge to occur.
+
+4. **Testbench Observation Delay:** After waiting for the correct edge (`@(posedge clk)` or the appropriate `repeat`), a small simulation delay (e.g., `#1ps` based on timescale, or `#0.1`) is necessary before the assertion. This gives the simulator time to process the scheduled updates triggered by the clock edge and ensures the testbench samples the *new* output value, avoiding race conditions within the simulator's event queue. This delay does **not** affect the DUT's actual execution time.
+
+**Solution / Correct Testbench Strategy:**
+
+Instead of simply waiting `repeat(InstructionCycles)`, the robust method is:
+
+1. **Calculate Completion Edge:** Based on FSM/microcode analysis, determine the *exact clock edge number* (relative to reset or a previous known point) where the specific register/flag being tested will latch its final value for the instruction under test.
+2. **Wait for That Edge:** Use `repeat(N)` or sequences of `@(posedge clk)` to advance the testbench simulation time precisely *to that specific completion edge*.
+3. **Add Observation Delay:** Immediately after waiting for the completion edge, add a small delay (`#1ps` or `#0.1`).
+4. **Assert:** Perform the `inspect_register` or `pretty_print_assert_vec` check *after* the small delay.
+
+**Key Takeaway & Analogy:**
+
+- **Points vs. Intervals:** Think of clock edges as instantaneous points (or fence posts) and clock cycles as the time intervals *between* them. `repeat(N)` counts *points*. Register updates happen *on* the points based on signals active *during* the preceding interval. The *result* (updated output) is visible *during* the *next* interval.
+- **Testbench Timing:** The testbench must wait until *after* the specific point (clock edge) where the state change occurs before it can reliably observe the result during the subsequent interval. Calculating the wait based on reaching this specific edge is more reliable than just counting total instruction cycles.
+
+This clarified that the DUT *was* likely operating correctly with combinational control signals, but the testbench observation timing needed to be precisely synchronized with the edge where the register output became valid.
+
 ---
 
 More insights to come as the project evolves!
