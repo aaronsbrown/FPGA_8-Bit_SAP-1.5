@@ -14,8 +14,7 @@ module computer_tb;
     computer uut (
             .clk(clk),
             .reset(reset),
-            .out_val(out_val),
-            .cpu_flags(cpu_flags_out)
+            .out_val(out_val)
     );
 
     // Clock generation: 10ns period (5ns high, 5ns low)

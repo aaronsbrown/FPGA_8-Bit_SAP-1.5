@@ -13,8 +13,7 @@ module computer (
 );
 
     // Control words are initialized to zero to avoid 'x' propagation in the system.
-    control_word_t control_word = '{default: 0}; 
-    control_word_t next_control_word = '{default: 0};
+    control_word_t control_word = '{default: 0};
 
     // Microcode instruction format
     logic [OPCODE_WIDTH-1:0] opcode; 
@@ -154,11 +153,9 @@ module computer (
         if (reset) begin 
             current_state <= S_RESET; // Reset to initial state
             current_step <= MS0; // Reset to initial step
-            control_word <= '{default: 0}; // Clear control word
         end else begin // Normal clocked operation
             current_state <= next_state; // Update to next step
-            current_step <= next_step; // Update to next microstep
-            control_word <= next_control_word; // Update control word
+            current_step <= next_step; // Update to next microstep  
         end
     end
 
@@ -166,44 +163,44 @@ module computer (
     always_comb begin 
         next_state = current_state; // Initialize next state to current state
         next_step = current_step; // Initialize next step to current step
-        next_control_word = '{default: 0}; // Clear next control word
+        control_word = '{default: 0}; // Clear next control word
 
         case (current_state)
             S_RESET: begin
                 next_state = S_FETCH_0; // Transition to fetch state
             end
             S_FETCH_0: begin
-                next_control_word = '{default: 0, oe_pc: 1}; // Enable program counter output
+                control_word = '{default: 0, oe_pc: 1}; // Enable program counter output
                 next_state = S_FETCH_1; // Move to next state
             end
             S_FETCH_1: begin
-                next_control_word = '{default: 0, oe_pc: 1, load_mar: 1}; // Load memory address register
+                control_word = '{default: 0, oe_pc: 1, load_mar: 1}; // Load memory address register
                 next_state = S_DECODE_0; // Move to next state
             end
             S_DECODE_0: begin
-                next_control_word = '{default: 0, oe_ram: 1}; // Enable RAM output
+                control_word = '{default: 0, oe_ram: 1}; // Enable RAM output
                 next_state = S_DECODE_1; // Move to next step
             end
             S_DECODE_1: begin
-                next_control_word = '{default: 0, oe_ram: 1, load_ir: 1, pc_enable: 1}; // Load instruction and enable PC
+                control_word = '{default: 0, oe_ram: 1, load_ir: 1, pc_enable: 1}; // Load instruction and enable PC
                 next_state = S_WAIT; // Move to next step
             end
             S_WAIT: begin
                 next_state = S_EXECUTE; // Critical delay to allow OPCODE latch
             end
             S_EXECUTE: begin
-                next_control_word = microcode_rom[opcode][current_step]; // Fetch control word from microcode ROM
-                if (next_control_word.halt) begin
+                control_word = microcode_rom[opcode][current_step]; // Fetch control word from microcode ROM
+                if (control_word.halt) begin
                     next_state = S_HALT; 
                     next_step = MS0; 
-                // end else if ( (next_control_word.check_zero && !flag_zero) ||
-                //               (next_control_word.check_carry && !flag_carry) ) begin
+                // end else if ( (control_word.check_zero && !flag_zero) ||
+                //               (control_word.check_carry && !flag_carry) ) begin
                    
                 //    // Skip loading PC with JMP address if conditions aren't met
-                //    next_control_word = '{default:0};
+                //    control_word = '{default:0};
                 //    next_state = S_FETCH_0;
                 //    next_step = MS0; 
-                end else if (next_control_word.last_step) begin
+                end else if (control_word.last_step) begin
                     next_state = S_FETCH_0; 
                     next_step = MS0; 
                 end else begin
@@ -212,11 +209,11 @@ module computer (
             end
             
             S_HALT: begin
-                next_control_word = '{default: 0}; // Default control word
+                control_word = '{default: 0}; // Default control word
                 next_state = S_HALT; // Remain in halt state
             end
             default: begin
-                next_control_word = '{default: 0}; // Default control word
+                control_word = '{default: 0}; // Default control word
                 next_state = S_HALT; // Transition to halt state on error
             end
         endcase

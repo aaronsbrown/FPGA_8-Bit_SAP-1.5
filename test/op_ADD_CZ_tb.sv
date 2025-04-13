@@ -39,35 +39,25 @@ module computer_tb;
     
     reset_and_wait(0);
     
-    inspect_register(uut.u_register_A.latched_data, 8'h00, "A", DATA_WIDTH);
+    // REG A == 0x00
+    inspect_register(uut.u_register_A.latched_data, 8'h00, "initial state: A is 0", DATA_WIDTH);
     
-    // LDA: (5 + 4) + 1 = 10
-    repeat (10) @(posedge clk); 
-    inspect_register(uut.u_register_A.latched_data, 8'h00, "A", DATA_WIDTH);
-
+    // LDA: (5 + 4) = 9 cycles
+    repeat (9) @(posedge clk); 
+   
     // + 1 for latching A register
-    repeat (1) @(posedge clk); // LDA: 5 + 4 + 1 + 1 = 11 
-    #0.1;
-    inspect_register(uut.u_register_A.latched_data, 8'hFF, "A", DATA_WIDTH);
-
-    // ADD: -1 + (5 + 6) + 1 = 11
-    repeat (10) @(posedge clk); 
-    inspect_register(uut.u_register_A.latched_data, 8'hFF, "A", DATA_WIDTH);
-    inspect_register(uut.u_register_B.latched_data, 8'h01, "B", DATA_WIDTH);
-    
     repeat (1) @(posedge clk); 
-    inspect_register(uut.u_register_A.latched_data, 8'hFF, "A", DATA_WIDTH);
-    inspect_register(uut.u_register_flags.latched_data, 3'b011, "Flags", 3); // N = 0, C = 1, Z = 1
-
     #0.1;
-    inspect_register(uut.u_register_A.latched_data, 8'h00, "A", DATA_WIDTH);
+    inspect_register(uut.u_register_A.latched_data, 8'hFF, "after LDA: A is FF", DATA_WIDTH);
 
-    // OUTA: -1 + (5 + 2) + 1 = 7 
-    repeat (7) @(posedge clk); 
-    inspect_register(uut.u_register_o.latched_data, 8'h00, "O", DATA_WIDTH);
-    #0.1;
-    inspect_register(uut.u_register_A.latched_data, 8'h00, "A", DATA_WIDTH);
-    inspect_register(uut.u_register_o.latched_data, 8'h00, "O", DATA_WIDTH);
+    // ADD: (5 + 6) = 11
+    repeat (11) @(posedge clk);
+    #0.1; 
+    inspect_register(uut.u_register_A.latched_data, 8'h00, "after ADD: A is 0", DATA_WIDTH);
+    inspect_register(uut.u_register_B.latched_data, 8'h01, "after ADD: B is 1", DATA_WIDTH);
+    pretty_print_assert_vec(flag_zero, 1'b1, "Flag Zero");
+    pretty_print_assert_vec(flag_carry, 1'b1, "Flag Carry");
+    pretty_print_assert_vec(flag_negative, 1'b0, "Flag Negative");
 
     run_until_halt(50);
 
