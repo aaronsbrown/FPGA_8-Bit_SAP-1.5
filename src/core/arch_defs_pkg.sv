@@ -8,13 +8,13 @@ package arch_defs_pkg;
     parameter int OPERAND_WIDTH = DATA_WIDTH - OPCODE_WIDTH;
 
     typedef enum logic [OPCODE_WIDTH-1:0] {
-        NOP =   4'b0000,
+        NOP =   4'b0000, // tested
         LDA =   4'b0001, // tested
         LDB =   4'b0010, // tested
-        ADD =   4'b0011,
-        SUB =   4'b0100,
-        AND =   4'b0101,
-        OR  =   4'b0110,
+        ADD =   4'b0011, // tested
+        SUB =   4'b0100, // tested
+        AND =   4'b0101, // tested
+        OR  =   4'b0110, // tested
         STA =   4'b0111,
         LDI =   4'b1000, // tested
         JMP =   4'b1001,

@@ -4,6 +4,8 @@ import arch_defs_pkg::*;
 
 module computer_tb;
 
+  localparam string HEX_FILE = "../fixture/LDB.hex";
+
   reg clk;
   reg reset;
   wire [DATA_WIDTH-1:0] out_val; // Output value from the DUT
@@ -27,7 +29,8 @@ module computer_tb;
     $dumpfile("waveform.vcd");
     $dumpvars(0, computer_tb);
 
-    $readmemh("../fixture/LDB.hex", uut.u_ram.mem);
+    $display("--- Loading hex file: %s ---", HEX_FILE);
+    $readmemh(HEX_FILE, uut.u_ram.mem);
     uut.u_ram.dump();
     
     reset_and_wait(0);

@@ -37,7 +37,7 @@ module ram (
 `ifndef SIMULATION
     initial begin
         // Synthesis tool reads this file during compilation
-        $readmemh("fixture/default_program_synth.hex", mem);
+        $readmemh("../fixture/default_program_synth.hex", mem);
     end
 `endif
 
