@@ -4,10 +4,12 @@ import arch_defs_pkg::*;
 // a RAM interface, and a microcode ROM to control the CPU's operations based on opcodes and microsteps.
 
 module computer (
-    input wire clk,
-    input wire reset, 
+    input wire  clk,
+    input wire  reset, 
     output wire [DATA_WIDTH-1:0] out_val,
-    output wire [2:0] cpu_flags
+    output wire flag_zero_o,
+    output wire flag_carry_o,
+    output wire flag_negative_o
 );
 
     // Control words are initialized to zero to avoid 'x' propagation in the system.
@@ -24,13 +26,13 @@ module computer (
     logic [ADDR_WIDTH-1:0] counter_out, memory_address_out; // Outputs from the program counter and memory address register
     
     // Register outputs to simulate bus transceiver behavior
-    logic [DATA_WIDTH-1:0] o_out, a_out, b_out, ir_out, alu_out, ram_out;
+    logic [DATA_WIDTH-1:0] o_out, a_out, b_out, alu_out, ram_out;
     
     // Shared bus for data transfer among components
     logic [DATA_WIDTH-1:0] bus;
     
     // Control signals for loading data from the bus into registers
-    logic load_o, load_a, load_b, load_ir, load_pc, load_ram, load_mar;
+    logic load_o, load_a, load_b, load_ir, load_pc, load_flags, load_ram, load_mar;
     
     // Control signals for outputting data to the bus
     logic oe_a, oe_alu, oe_ir, oe_pc, oe_ram;
@@ -52,7 +54,7 @@ module computer (
 
     // Output register for holding the output value
     assign out_val = o_out;
-    register_nbit #( .N(DATA_WIDTH) ) u_output_register (
+    register_nbit #( .N(DATA_WIDTH) ) u_register_o (
         .clk(clk),
         .reset(reset),
         .load(load_o),
@@ -97,9 +99,11 @@ module computer (
         .operand(operand)
     );
 
+    logic [2:0] flags_out;
     logic flag_zero;
     logic flag_carry;
     logic flag_negative;
+    
     alu u_alu (
         .clk(clk),
         .reset(reset),
@@ -112,11 +116,17 @@ module computer (
         .negative_flag(flag_negative)
     );
     
-    assign cpu_flags[0] = flag_zero;
-    assign cpu_flags[1] = flag_carry;
-    assign cpu_flags[2] = flag_negative;
-    
-    
+    register_nbit #( .N(3) ) u_register_flags (
+        .clk(clk),
+        .reset(reset),
+        .load(load_flags),
+        .data_in( {flag_negative, flag_carry, flag_zero} ),
+        .latched_data(flags_out)
+    );
+    assign flag_zero_o = flags_out[0];
+    assign flag_carry_o = flags_out[1];
+    assign flag_negative_o = flags_out[2];
+
     // RAM module instantiation
     ram u_ram (
         .clk(clk),
@@ -151,8 +161,6 @@ module computer (
             control_word <= next_control_word; // Update control word
         end
     end
-
-    // TODO add a flags register
 
     // Combinational logic to determine the next state and control word based on the current step
     always_comb begin 
@@ -230,6 +238,7 @@ module computer (
     assign alu_op = control_word.alu_op;
     assign pc_enable = control_word.pc_enable; 
     assign halt = control_word.halt; 
+    assign load_flags = control_word.load_flags;
 
     // Microcode ROM: 16 opcodes (4-bit program counter) and 8 microsteps per opcode
     // Ensure indexing does not exceed bounds of the ROM
@@ -257,14 +266,14 @@ module computer (
         microcode_rom[ADD][MS1] = '{default: 0, oe_ir: 1, load_mar: 1}; // Load MAR with operand
         microcode_rom[ADD][MS2] = '{default: 0, oe_ram: 1}; // Enable RAM output        
         microcode_rom[ADD][MS3] = '{default: 0, oe_ram: 1, load_b: 1}; // Load value into register B
-        microcode_rom[ADD][MS4] = '{default: 0, oe_alu: 1, alu_op: ALU_ADD}; // Add and output
+        microcode_rom[ADD][MS4] = '{default: 0, oe_alu: 1, load_flags: 1, alu_op: ALU_ADD}; // Add and output
         microcode_rom[ADD][MS5] = '{default: 0, oe_alu: 1, load_a: 1, last_step: 1}; // Load value into register A
 
         microcode_rom[SUB][MS0] = '{default: 0, oe_ir: 1};
         microcode_rom[SUB][MS1] = '{default: 0, oe_ir: 1, load_mar: 1}; // Load MAR with operand
         microcode_rom[SUB][MS2] = '{default: 0, oe_ram: 1}; // Enable RAM output        
         microcode_rom[SUB][MS3] = '{default: 0, oe_ram: 1, load_b: 1}; // Load value into register B
-        microcode_rom[SUB][MS4] = '{default: 0, oe_alu: 1, alu_op: ALU_SUB}; // Add and output
+        microcode_rom[SUB][MS4] = '{default: 0, oe_alu: 1, load_flags: 1, alu_op: ALU_SUB}; // Add and output
         microcode_rom[SUB][MS5] = '{default: 0, oe_alu: 1, load_a: 1, last_step: 1}; // Load value into register A
 
         microcode_rom[AND][MS0] = '{default: 0, oe_ir: 1};

@@ -65,13 +65,14 @@ package arch_defs_pkg;
         logic oe_ram;       //#10      
         logic [1:0] alu_op; //#9      
         logic oe_alu;       //#8      
-        logic check_zero;   //#7      
-        logic check_carry;  //#6      
-        logic load_a;       //#5      
-        logic oe_a;         //#4      
-        logic load_b;       //#3      
-        logic oe_b;         //#2      
-        logic load_o;       //#1      
+        logic load_flags;   //#7
+        logic check_zero;   //#6      
+        logic check_carry;  //#5      
+        logic load_a;       //#4      
+        logic oe_a;         //#3      
+        logic load_b;       //#2      
+        logic oe_b;         //#1      
+        logic load_o;       //#0      
 
     } control_word_t;
 

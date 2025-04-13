@@ -25,15 +25,17 @@ module top (
     wire [7:0] output_value;
     assign led = output_value;
     
-    wire [2:0] flags;
-    assign io_led = flags;
+    
     computer u_computer (
         .clk(clk_out),
         .reset(sys_reset),
         .out_val(output_value),
-        .cpu_flags(flags)
+        .flag_zero_o(io_led[0]),    
+        .flag_carry_o(io_led[1]),
+        .flag_negative_o(io_led[2])
     );
     
+
     seg7_display u_display (
         .clk(clk_out),
         .reset(sys_reset),
