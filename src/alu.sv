@@ -28,7 +28,7 @@ module alu (
         
         case (alu_op)
             ALU_ADD: comb_arith_result_i = {1'b0, a_in} + {1'b0, b_in};
-            ALU_SUB: comb_arith_result_i = {1'b0, a_in} - {1'b0, b_in};
+            ALU_SUB: comb_arith_result_i = {1'b0, a_in} + {1'b0, ~b_in} + {{DATA_WIDTH{1'b0}}, 1'b1};
             ALU_AND: comp_logic_result_i = a_in & b_in;
             ALU_OR:  comp_logic_result_i = a_in | b_in;
             default: ;
