@@ -98,7 +98,6 @@ module alu_tb;
         #1;
 
         // 2. Test ADD operations
-        // CORRECTED: Pass operation name string as 4th argument
         apply_and_check(8'h05, 8'h03, ALU_ADD, "ADD", 8'h08, 1'b0, 1'b0, 1'b0, "ADD: 5 + 3");
         apply_and_check(8'h00, 8'h00, ALU_ADD, "ADD", 8'h00, 1'b0, 1'b1, 1'b0, "ADD: 0 + 0");
         apply_and_check(8'hFF, 8'h01, ALU_ADD, "ADD", 8'h00, 1'b1, 1'b1, 1'b0, "ADD: 255 + 1");

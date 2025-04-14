@@ -4,7 +4,7 @@ import arch_defs_pkg::*;
 
 module computer_tb;
   
-  localparam string HEX_FILE = "../fixture/ADD_CZ.hex";
+  localparam string HEX_FILE = "../fixture/Flags_Reg_AND.hex";
 
   reg clk;
   reg reset;
@@ -29,7 +29,10 @@ module computer_tb;
 
   // Testbench stimulus
   initial begin
-    
+  
+    // 8'h00, 
+    // C: 1'b0, Z: 1'b1,  N: 1'b0, "AND: F0 & 0F");
+
     $dumpfile("waveform.vcd");
     $dumpvars(0, computer_tb);
 
@@ -48,20 +51,20 @@ module computer_tb;
     // + 1 for latching A register
     repeat (1) @(posedge clk); 
     #0.1;
-    inspect_register(uut.u_register_A.latched_data, 8'hFF, "after LDA: A is FF", DATA_WIDTH);
+    inspect_register(uut.u_register_A.latched_data, 8'hF0, "after LDA: A is F0", DATA_WIDTH);
 
-    // ADD: (5 + 6) = 11
+    // AND: (5 + 6) = 11
     repeat (11) @(posedge clk);
     #0.1; 
-    inspect_register(uut.u_register_A.latched_data, 8'h00, "after ADD: A is 0", DATA_WIDTH);
-    inspect_register(uut.u_register_B.latched_data, 8'h01, "after ADD: B is 1", DATA_WIDTH);
+    inspect_register(uut.u_register_A.latched_data, 8'h00, "after AND: A is 00", DATA_WIDTH);
+    inspect_register(uut.u_register_B.latched_data, 8'h0F, "after AND: B is 0F", DATA_WIDTH);
     pretty_print_assert_vec(flag_zero, 1'b1, "Flag Zero");
-    pretty_print_assert_vec(flag_carry, 1'b1, "Flag Carry");
+    pretty_print_assert_vec(flag_carry, 1'b0, "Flag Carry");
     pretty_print_assert_vec(flag_negative, 1'b0, "Flag Negative");
 
     run_until_halt(50);
 
-    $display("\033[0;32mADD instruction test completed successfully.\033[0m");
+    $display("\033[0;32mAND instruction test completed successfully.\033[0m");
     $finish;
   end
 
