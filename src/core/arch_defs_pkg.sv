@@ -15,11 +15,11 @@ package arch_defs_pkg;
         SUB =   4'b0100, // tested
         AND =   4'b0101, // tested
         OR  =   4'b0110, // tested
-        STA =   4'b0111,
+        STA =   4'b0111, // tested
         LDI =   4'b1000, // tested
-        JMP =   4'b1001,
-        JC  =   4'b1010, // need flag reg
-        JZ  =   4'b1011, // need flag reg
+        JMP =   4'b1001, // tested
+        JC  =   4'b1010, 
+        JZ  =   4'b1011, 
         OUTM =  4'b1101, 
         OUTA =  4'b1110,
         HLT =   4'b1111

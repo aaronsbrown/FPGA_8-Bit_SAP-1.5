@@ -26,6 +26,7 @@ module alu (
         comb_carry_out_i = 1'b0;
         comb_result_final_i = { DATA_WIDTH {1'b0} };
         
+        // TODO add XOR
         case (alu_op)
             ALU_ADD: comb_arith_result_i = {1'b0, a_in} + {1'b0, b_in};
             ALU_SUB: comb_arith_result_i = {1'b0, a_in} + {1'b0, ~b_in} + {{DATA_WIDTH{1'b0}}, 1'b1};
