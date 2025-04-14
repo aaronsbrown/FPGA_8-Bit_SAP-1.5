@@ -1,5 +1,3 @@
-You got it! Here is the full README content again as raw Markdown text.
-
 ```markdown
 # Ben Eater 8-bit Computer (FPGA Implementation)
 
@@ -50,57 +48,6 @@ This project is a Verilog-based recreation of Ben Eater's classic breadboard 8-b
 
 ---
 
-You are absolutely right! My apologies. Reviewing the `computer.sv` code you provided in the last complete listing, you **HAVE implemented** the hardware for the flags register:
-
-```systemverilog
-    // ALU Instance providing combinational flags
-    alu u_alu (
-        // ... connections ...
-        .zero_flag(flag_zero),
-        .carry_flag(flag_carry),
-        .negative_flag(flag_negative)
-    );
-
-    // The actual Flags Register instance
-    register_nbit #( .N(3) ) u_register_flags (
-        .clk(clk),
-        .reset(reset),
-        .load(load_flags), // Controlled by microcode via next_control_word
-        .data_in( {flag_negative, flag_carry, flag_zero} ), // Input from ALU
-        .latched_data(flags_out) // Output holding registered flags
-    );
-
-    // Assigning registered flags to output ports
-    assign flag_zero_o = flags_out[0];
-    assign flag_carry_o = flags_out[1];
-    assign flag_negative_o = flags_out[2];
-
-    // Control signal assignment
-    assign load_flags = next_control_word.load_flags;
-
-    // Example Microcode setting the load_flags bit
-    // microcode_rom[ADD][MS4] = '{default: 0, oe_alu: 1, load_flags: 1, alu_op: ALU_ADD};
-```
-
-**Therefore, the README status list needs correction.**
-
-You have completed:
-
-* Implementing the Flags Register hardware (`u_register_flags`).
-* Adding the `load_flags` control bit to `control_word_t` and connecting it.
-* Setting `load_flags` in the microcode for at least ADD and SUB.
-
-The remaining related TODOs are:
-
-* Deciding which *other* instructions (AND, OR, LDI/LDA/LDB?, INC/DEC?) should affect flags and setting `load_flags=1` appropriately in their microcode.
-* Implementing the **conditional jump logic** within the `S_EXECUTE` state's `always_comb` block (reading `flags_out` and overriding `load_pc`).
-* Writing and passing the tests for `JZ` and `JC`.
-
-Let's update that README status section!
-
-**Updated README Status Section (Raw Markdown):**
-
-```markdown
 ## 🚦 Project Status
 
 - [x] Project initialized & basic structure defined.
@@ -128,9 +75,6 @@ Let's update that README status section!
 - [ ] Add extended instruction set (e.g., `INC`, `DEC`, Shifts/Rotates).
 - [ ] Add stack support (`SP` register, `PUSH`, `POP`) and `CALL`/`RET` instructions.
 - [ ] Implement RAM initialization for synthesis robustly (e.g., using `$readmemh` in `ram.sv` initial block).
-```
-
-Thanks for pointing out my oversight in the previous README update! You *have* implemented the register itself.
 
 ---
 
@@ -141,7 +85,6 @@ To run a specific simulation testbench (e.g., the Jump test):
 ```bash
 ./scripts/simulate.sh --tb op_JMP_tb.sv
 ```
-
 (Tests typically load their specific program into RAM using `$readmemh` from the `fixture/` directory).
 
 🧪 **Test Strategy**
@@ -149,35 +92,31 @@ To run a specific simulation testbench (e.g., the Jump test):
 Each module is individually verified via simulation using Icarus Verilog and GTKWave before integrating into the full CPU. System-level tests verify instruction execution by running small programs loaded from `.hex` files and asserting expected register and flag states at precise clock cycles corresponding to instruction completion.
 
 🛠️ **Tools**
-
-* Icarus Verilog (Simulator)
-* GTKWave (Waveform Viewer)
-* sv2v (SystemVerilog to Verilog converter, used by scripts)
-* Yosys (Synthesis)
-* nextpnr (Place and Route for iCE40)
-* icepack/iceprog (Bitstream packing/uploading)
+ * Icarus Verilog (Simulator)
+ * GTKWave (Waveform Viewer)
+ * sv2v (SystemVerilog to Verilog converter, used by scripts)
+ * Yosys (Synthesis)
+ * nextpnr (Place and Route for iCE40)
+ * icepack/iceprog (Bitstream packing/uploading)
 
 ---
 
 ## 🛣️ Next Milestone: Conditional Logic & SAP-2 Features
 
 With the core instruction cycle stable, parameterized, and control logic corrected, the next critical steps involve **state management for flags**:
-
-1. Implement the **Flags Register** hardware in `computer.sv`.
-2. Implement the **`load_flags` control mechanism** via the microcode to selectively update the Flags Register only for instructions that should affect flags (ALU ops, CMP, potentially loads/INC/DEC).
+1. Implement the **Flags Register** hardware in `computer.sv`. <!-- Already Done -->
+2. Implement the **`load_flags` control mechanism** via the microcode to selectively update the Flags Register only for instructions that should affect flags (ALU ops, CMP, potentially loads/INC/DEC). <!-- Partially Done -->
 3. Implement the **conditional execution logic** in the FSM to read the *registered* flags and modify behavior (specifically suppressing `load_pc` for jumps) based on `check_zero`/`check_carry` bits.
 
 Once these are complete and `JZ`/`JC` are tested:
-
-* Implement and test a `CMP` instruction.
-* Implement and test `XOR`.
+- Implement and test a `CMP` instruction.
+- Implement and test `XOR`.
 
 Subsequent goals move toward a SAP-2-style architecture as described in Malvino's *Digital Computer Electronics*:
-
-* Stack support via a dedicated stack pointer register (`SP`).
-* `PUSH`, `POP`, `CALL`, and `RET` instructions.
-* Other instructions like `INC`, `DEC`, Shifts, Rotates.
-* Robust synthesis-time RAM initialization.
+- Stack support via a dedicated stack pointer register (`SP`).
+- `PUSH`, `POP`, `CALL`, and `RET` instructions.
+- Other instructions like `INC`, `DEC`, Shifts, Rotates.
+- Robust synthesis-time RAM initialization.
 
 These additions will allow the CPU to support more complex programs, subroutines, and branching logic.
 
