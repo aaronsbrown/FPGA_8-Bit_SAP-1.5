@@ -58,6 +58,7 @@ module computer_tb;
         // 3. Check Register B: Should be 3 (0x03) from the LDB 0xD instruction *before* NOP
         inspect_register(uut.u_register_B.latched_data, 8'h03, "B", DATA_WIDTH);
 
+        // TODO
         // 4. Check Flags (CRITICAL - Requires Flags Register Implementation):
         //    The SUB instruction (3 - 5) should result in:
         //    - Zero Flag (Z) = 0

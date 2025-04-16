@@ -47,7 +47,7 @@ module computer (
         .reset(reset),
         .enable(pc_enable),
         .load(load_pc),
-        .counter_in(bus[3:0]),
+        .counter_in(bus[ADDR_WIDTH-1:0]),
         .counter_out(counter_out)
     );
 
