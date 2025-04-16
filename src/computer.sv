@@ -31,7 +31,7 @@ module computer (
     logic [DATA_WIDTH-1:0] bus;
     
     // Control signals for loading data from the bus into registers
-    logic load_o, load_a, load_b, load_ir, load_pc, load_flags, load_ram, load_mar;
+    logic load_o, load_a, load_b, load_ir, load_pc, load_flags, load_sets_zn, load_ram, load_mar;
     
     // Control signals for outputting data to the bus
     logic oe_a, oe_alu, oe_ir, oe_pc, oe_ram;
@@ -98,11 +98,9 @@ module computer (
         .operand(operand)
     );
 
-    logic [2:0] flags_out;
     logic flag_zero;
     logic flag_carry;
     logic flag_negative;
-    
     alu u_alu (
         .clk(clk),
         .reset(reset),
@@ -115,11 +113,33 @@ module computer (
         .negative_flag(flag_negative)
     );
     
+
+    // Handle ZN flags for ALU or LOAD operations
+    logic load_data_is_zero, load_data_is_negative;
+    assign load_data_is_zero = (opcode == (LDI || LDA || LDB ) ) ? ( load_a && ( operand == { OPERAND_WIDTH{1'b0} }) ) :
+                                                 ( ( load_a || load_b ) && ( bus == { DATA_WIDTH{1'b0} }) );
+    assign load_data_is_negative = (opcode == (LDI || LDA || LDB ) ) ? ( load_a && operand[OPERAND_WIDTH - 1] ) :
+                                                 ( ( load_a || load_b ) && ( bus[DATA_WIDTH - 1] ) );
+    
+    // Logic to determine if the zero, carry, or negative flags should be set based on the ALU operation
+    // or the LOAD operation
+    logic Z_in, N_in, C_in;
+    always_comb begin
+        Z_in = flag_zero;
+        N_in = flag_negative;
+        C_in = flag_carry;
+        if (load_sets_zn) begin
+            Z_in = load_data_is_zero;
+            N_in = load_data_is_negative;
+        end
+    end
+
+    logic [2:0] flags_out;
     register_nbit #( .N(3) ) u_register_flags (
         .clk(clk),
         .reset(reset),
         .load(load_flags),
-        .data_in( {flag_negative, flag_carry, flag_zero} ),
+        .data_in( {N_in, C_in, Z_in} ),
         .latched_data(flags_out)
     );
     assign flag_zero_o = flags_out[0];
@@ -160,11 +180,14 @@ module computer (
     end
 
     // Combinational logic to determine the next state and control word based on the current step
+    logic check_jump_condition = 1'b0; // Initialize jump condition check
+    logic jump_condition_satisfied = 1'b0; // Initialize jump condition satisfied flag
     always_comb begin 
         next_state = current_state; // Initialize next state to current state
         next_step = current_step; // Initialize next step to current step
         control_word = '{default: 0}; // Clear next control word
 
+        
         case (current_state)
             S_RESET: begin
                 next_state = S_FETCH_0; // Transition to fetch state
@@ -190,16 +213,22 @@ module computer (
             end
             S_EXECUTE: begin
                 control_word = microcode_rom[opcode][current_step]; // Fetch control word from microcode ROM
+                
+                check_jump_condition = control_word.check_zero || control_word.check_carry || control_word.check_negative;
+                jump_condition_satisfied = (control_word.check_zero && flags_out[0]) ||
+                                                (control_word.check_carry && flags_out[1]) ||
+                                                (control_word.check_negative && flags_out[2]);
+
                 if (control_word.halt) begin
                     next_state = S_HALT; 
                     next_step = MS0; 
-                // end else if ( (control_word.check_zero && !flag_zero) ||
-                //               (control_word.check_carry && !flag_carry) ) begin
+                end else if ( check_jump_condition && !jump_condition_satisfied) begin
                    
-                //    // Skip loading PC with JMP address if conditions aren't met
-                //    control_word = '{default:0};
-                //    next_state = S_FETCH_0;
-                //    next_step = MS0; 
+                   // Don't Jump! Suppress loading PC with new JMP address if conditions aren't met
+                   control_word.load_pc = 1'b0;
+                   next_state = S_FETCH_0;
+                   next_step = MS0; 
+                
                 end else if (control_word.last_step) begin
                     next_state = S_FETCH_0; 
                     next_step = MS0; 
@@ -236,6 +265,7 @@ module computer (
     assign pc_enable = control_word.pc_enable; 
     assign halt = control_word.halt; 
     assign load_flags = control_word.load_flags;
+    assign load_sets_zn = control_word.load_sets_zn;
 
     // Microcode ROM: 16 opcodes (4-bit program counter) and 8 microsteps per opcode
     // Ensure indexing does not exceed bounds of the ROM
@@ -254,13 +284,13 @@ module computer (
         microcode_rom[LDA][MS0] = '{default: 0, oe_ir: 1}; // Load instruction register
         microcode_rom[LDA][MS1] = '{default: 0, oe_ir: 1, load_mar: 1}; // Prepare to load from RAM
         microcode_rom[LDA][MS2] = '{default: 0, oe_ram: 1}; // Enable RAM output
-        microcode_rom[LDA][MS3] = '{default: 0, oe_ram: 1, load_a: 1, last_step: 1}; // Load value into register A
+        microcode_rom[LDA][MS3] = '{default: 0, oe_ram: 1, load_a: 1, load_flags: 1, load_sets_zn: 1, last_step: 1}; // Load value into register A
         
         //x02
         microcode_rom[LDB][MS0] = '{default: 0, oe_ir: 1}; // Load instruction register
         microcode_rom[LDB][MS1] = '{default: 0, oe_ir: 1, load_mar: 1}; // Prepare to load from RAM
         microcode_rom[LDB][MS2] = '{default: 0, oe_ram: 1}; // Enable RAM output
-        microcode_rom[LDB][MS3] = '{default: 0, oe_ram: 1, load_b: 1, last_step: 1}; // Load value into register B
+        microcode_rom[LDB][MS3] = '{default: 0, oe_ram: 1, load_b: 1, load_flags: 1, load_sets_zn: 1, last_step: 1}; // Load value into register B
         
         //x03
         microcode_rom[ADD][MS0] = '{default: 0, oe_ir: 1};
@@ -302,19 +332,23 @@ module computer (
        
         //x08
         microcode_rom[LDI][MS0] = '{default: 0, oe_ir: 1}; // Load instruction register
-        microcode_rom[LDI][MS1] = '{default: 0, oe_ir: 1, load_a: 1, last_step: 1}; // Load A
+        microcode_rom[LDI][MS1] = '{default: 0, oe_ir: 1, load_a: 1, load_flags: 1, load_sets_zn: 1, last_step: 1}; // Load A
         
         //x09
         microcode_rom[JMP][MS0] = '{default: 0, oe_ir: 1}; // Load instruction register
         microcode_rom[JMP][MS1] = '{default: 0, oe_ir: 1, load_pc: 1, last_step: 1}; // Load program counter
 
         //x0A
+        microcode_rom[JC][MS0] = '{default: 0, oe_ir: 1}; // Load instruction register
+        microcode_rom[JC][MS1] = '{default: 0, oe_ir: 1, check_carry: 1, load_pc: 1, last_step: 1}; // Load program counter
+
+        //x0B
         microcode_rom[JZ][MS0] = '{default: 0, oe_ir: 1}; // Load instruction register
         microcode_rom[JZ][MS1] = '{default: 0, oe_ir: 1, check_zero: 1, load_pc: 1, last_step: 1}; // Load program counter
 
-        //x0B
-        microcode_rom[JC][MS0] = '{default: 0, oe_ir: 1}; // Load instruction register
-        microcode_rom[JC][MS1] = '{default: 0, oe_ir: 1, check_carry: 1, load_pc: 1, last_step: 1}; // Load program counter
+        //x0C
+        microcode_rom[JN][MS0] = '{default: 0, oe_ir: 1}; // Load instruction register
+        microcode_rom[JN][MS1] = '{default: 0, oe_ir: 1, check_negative: 1, load_pc: 1, last_step: 1}; // Load program counter
 
         //x0D
         microcode_rom[OUTM][MS0] = '{default: 0, oe_ir: 1}; // Load instruction register

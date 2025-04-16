@@ -11,6 +11,7 @@ translate opcode {
     1001 JMP
     1010 JC
     1011 JZ
+    1100 JN
     1101 OUTM
     1110 OUTA
     1111 HLT

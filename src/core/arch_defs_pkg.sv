@@ -18,11 +18,12 @@ package arch_defs_pkg;
         STA =   4'b0111, // tested
         LDI =   4'b1000, // tested
         JMP =   4'b1001, // tested
-        JC  =   4'b1010, 
-        JZ  =   4'b1011, 
-        OUTM =  4'b1101, 
-        OUTA =  4'b1110,
-        HLT =   4'b1111
+        JC  =   4'b1010, // tested
+        JZ  =   4'b1011, // tested
+        JN  =   4'b1100, // tested
+        OUTM =  4'b1101, // tested
+        OUTA =  4'b1110, // tested
+        HLT =   4'b1111  // tested
     } opcode_t;
         
     typedef enum logic [1:0] {
@@ -53,26 +54,28 @@ package arch_defs_pkg;
     } instruction_t;
 
     typedef struct packed {
-        logic halt;         //#19      
-        logic last_step;    //#18     
-        logic pc_enable;    //#17       
-        logic load_pc;      //#16      
-        logic oe_pc;        //#15      
-        logic load_ir;      //#14      
-        logic oe_ir;        //#13      
-        logic load_mar;     //#12      
-        logic load_ram;     //#11      
-        logic oe_ram;       //#10      
-        logic [1:0] alu_op; //#9      
-        logic oe_alu;       //#8      
-        logic load_flags;   //#7
-        logic check_zero;   //#6      
-        logic check_carry;  //#5      
-        logic load_a;       //#4      
-        logic oe_a;         //#3      
-        logic load_b;       //#2      
-        logic oe_b;         //#1      
-        logic load_o;       //#0      
+        logic halt;               
+        logic last_step;         
+        logic pc_enable;           
+        logic load_pc;            
+        logic oe_pc;              
+        logic load_ir;            
+        logic oe_ir;              
+        logic load_mar;           
+        logic load_ram;           
+        logic oe_ram;             
+        logic [1:0] alu_op;       
+        logic oe_alu;             
+        logic load_flags;   
+        logic load_sets_zn; 
+        logic check_zero;         
+        logic check_carry;  
+        logic check_negative;  
+        logic load_a;             
+        logic oe_a;               
+        logic load_b;             
+        logic oe_b;               
+        logic load_o;             
 
     } control_word_t;
 
