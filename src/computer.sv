@@ -176,7 +176,7 @@ module computer (
     // ===========================================================================
     logic flag_alu_zero;
     logic flag_alu_carry;
-    logic flag__alu_negative;
+    logic flag_alu_negative;
 
     // Determine if the LOAD operation resulted in zero or negative
     logic load_data_is_zero, load_data_is_negative;
@@ -192,7 +192,7 @@ module computer (
     logic Z_in, N_in, C_in;
     always_comb begin
         Z_in = flag_alu_zero;
-        N_in = flag__alu_negative;
+        N_in = flag_alu_negative;
         C_in = flag_alu_carry;
         if (load_sets_zn) begin
             Z_in = load_data_is_zero;

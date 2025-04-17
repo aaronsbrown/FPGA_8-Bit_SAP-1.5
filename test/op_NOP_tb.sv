@@ -77,7 +77,7 @@ module computer_tb;
         // 6. Check RAM[0xE]: Should contain 5 (0x05) from the first STA
         pretty_print_assert_vec(uut.u_ram.mem[14], 8'h05, "RAM[0xE]");
 
-        $display("\033[0;32mLDB instruction test completed successfully.\033[0m");
+        $display("\033[0;32mNOP instruction test completed successfully.\033[0m");
         $finish;
     end
 
