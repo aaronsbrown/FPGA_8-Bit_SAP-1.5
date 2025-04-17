@@ -2,6 +2,7 @@ package arch_defs_pkg;
 
     parameter int DATA_WIDTH = 8;
     parameter int ADDR_WIDTH = 4;
+    parameter int FLAG_COUNT = 3;
 
     parameter int RAM_DEPTH = (1 << ADDR_WIDTH);
     parameter int OPCODE_WIDTH = 4;

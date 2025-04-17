@@ -58,7 +58,7 @@ module computer_tb;
     // Inlined expected value:
     inspect_register(uut.u_program_counter.counter_out, 32'd1, "PC after HLT fetch", ADDR_WIDTH);
     inspect_register(uut.u_register_A.latched_data, {DATA_WIDTH{1'b0}}, "Register A after HLT", DATA_WIDTH);
-    inspect_register(uut.u_register_o.latched_data, {DATA_WIDTH{1'b0}}, "Output Reg O after HLT", DATA_WIDTH);
+    inspect_register(uut.u_register_OUT.latched_data, {DATA_WIDTH{1'b0}}, "Output Reg O after HLT", DATA_WIDTH);
     $display("\033[0;32mHLT instruction test completed successfully.\033[0m");
     $finish;
   end

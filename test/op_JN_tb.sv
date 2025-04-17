@@ -82,7 +82,7 @@ module computer_tb;
     $display("Running OUTM");
     repeat(9) @(posedge clk); 
     #0.1;
-    inspect_register(uut.u_register_o.latched_data, 8'h08, "After OUTM: O", DATA_WIDTH);
+    inspect_register(uut.u_register_OUT.latched_data, 8'h08, "After OUTM: O", DATA_WIDTH);
     inspect_register(uut.u_program_counter.counter_out, 8'h0A, "After OUTM: PC", ADDR_WIDTH);
    
     $display("Running HLT");
@@ -91,7 +91,7 @@ module computer_tb;
     $display("@%0t: Checking after Halt", $time);
     inspect_register(uut.u_program_counter.counter_out, 8'h0B, "After HLT: PC", ADDR_WIDTH);
     inspect_register(uut.u_register_A.latched_data, 8'h08, "After HLT: A", DATA_WIDTH);
-    inspect_register(uut.u_register_o.latched_data, 8'h08, "After HLT: O", DATA_WIDTH);
+    inspect_register(uut.u_register_OUT.latched_data, 8'h08, "After HLT: O", DATA_WIDTH);
 
     $display("\033[0;32mJN instruction test completed successfully.\033[0m");
     $finish;

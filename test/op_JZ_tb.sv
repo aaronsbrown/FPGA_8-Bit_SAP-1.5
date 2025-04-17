@@ -75,7 +75,7 @@ module computer_tb;
     $display("Running OUTA");
     repeat(7) @(posedge clk); 
     #0.1;
-    inspect_register(uut.u_register_o.latched_data, 8'h01, "After OUTA: O", DATA_WIDTH);
+    inspect_register(uut.u_register_OUT.latched_data, 8'h01, "After OUTA: O", DATA_WIDTH);
     inspect_register(uut.u_program_counter.counter_out, 8'h08, "After OUTA: PC", ADDR_WIDTH);
    
     // --- HLT (Fetched from address 0x8) ---
@@ -87,7 +87,7 @@ module computer_tb;
     $display("@%0t: Checking after Halt", $time);
     inspect_register(uut.u_program_counter.counter_out, 8'h09, "After HLT: PC", ADDR_WIDTH);
     inspect_register(uut.u_register_A.latched_data, 8'h01, "After HLT: A", DATA_WIDTH);
-    inspect_register(uut.u_register_o.latched_data, 8'h01, "After HLT: O", DATA_WIDTH);
+    inspect_register(uut.u_register_OUT.latched_data, 8'h01, "After HLT: O", DATA_WIDTH);
 
     $display("\033[0;32mJZ instruction test completed successfully.\033[0m");
     $finish;

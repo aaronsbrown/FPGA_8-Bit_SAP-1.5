@@ -38,7 +38,7 @@ module computer_tb;
     inspect_register(uut.u_register_A.latched_data, 8'h00, "A", DATA_WIDTH);
     run_until_halt(50);
     inspect_register(uut.u_register_A.latched_data, 8'h09, "A", DATA_WIDTH);
-    inspect_register(uut.u_register_o.latched_data, 8'h09, "A", DATA_WIDTH);
+    inspect_register(uut.u_register_OUT.latched_data, 8'h09, "A", DATA_WIDTH);
 
     
     $display("\033[0;32mOUTA instruction test completed successfully.\033[0m");
