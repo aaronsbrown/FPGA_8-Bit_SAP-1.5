@@ -40,23 +40,31 @@ package test_utils_pkg;
   
 
   // Task to run simulation until halt is asserted or a cycle timeout occurs
-  task run_until_halt;
+   task run_until_halt;
     input int max_cycles;
     int cycle;
-    begin
+    begin // Task begin
       cycle = 0;
-      while (`UUT_PATH.halt == 0 && cycle < max_cycles) begin
-        @(posedge clk);
+      while (cycle < max_cycles) begin 
+        #1ps; 
+        if (`UUT_PATH.halt == 1) begin 
+            $display("HALT signal detected high at start of cycle %0d.", cycle + 1);
+            break; 
+        end 
+        @(posedge clk); // Wait for next edge if not halted
         cycle++;
-      end
-      if (cycle >= max_cycles) begin
+      end 
+
+      #1ps; // Allow final state signals to settle
+      if (`UUT_PATH.halt == 0 && cycle >= max_cycles) begin // If timeout begin
         $display("\033[0;31mSimulation timed out. HALT signal not asserted after %0d cycles.\033[0m", cycle);
         $error("Simulation timed out.");
         $finish;
-      end else begin
-        $display("\033[0;32mSimulation completed. HALT signal received after %0d cycles.\033[0m", cycle);
-      end
-    end
+      end 
+      else begin // Else (halt detected or finished cycles but halt is high) begin
+        $display("\033[0;32mSimulation run completed (halt detected or max cycles reached while potentially halting). Cycles run: %0d\033[0m", cycle);
+      end 
+    end // Task end
   endtask
 
   task inspect_register;

@@ -9,12 +9,15 @@ module computer_tb;
     reg clk;
     reg reset;
     wire [DATA_WIDTH-1:0] out_val; 
-    wire [2:0] cpu_flags_out;
+    wire out_flag_zero, out_flag_carry, out_flag_negative; // Output flags from the DUT
   
     computer uut (
             .clk(clk),
             .reset(reset),
-            .out_val(out_val)
+            .out_val(out_val),
+            .flag_zero_o(out_flag_zero),
+            .flag_carry_o(out_flag_carry),
+            .flag_negative_o(out_flag_negative)
     );
 
     // Clock generation: 10ns period (5ns high, 5ns low)
@@ -58,23 +61,16 @@ module computer_tb;
         // 3. Check Register B: Should be 3 (0x03) from the LDB 0xD instruction *before* NOP
         inspect_register(uut.u_register_B.latched_data, 8'h03, "B", DATA_WIDTH);
 
-        // TODO
+        
         // 4. Check Flags (CRITICAL - Requires Flags Register Implementation):
-        //    The SUB instruction (3 - 5) should result in:
+        //    The LDB D  
         //    - Zero Flag (Z) = 0
-        //    - Carry Flag (C) = 0 (because Borrow occurred for 3 < 5)
-        //    - Negative Flag (N) = 1 (because result -2 is negative)
-        //    The LDB instruction *might* affect Z and N depending on your design choice.
-        //    The NOP instruction should *preserve* the state left by LDB (or SUB if LDB doesn't affect flags).
-        $display("Checking Flags (Requires Flags Register implementation for accuracy)...");
-        // Assuming LDB does *not* affect flags, the state should be from SUB 3,5:
-        // Replace uut.flag_out_X with the actual outputs from your flags register
-        // pretty_print_assert_vec(cpu_flags_out[0], 1'b0, "Zero Flag (Z)");
-        // pretty_print_assert_vec(cpu_flags_out[1], 1'b0, "Carry Flag (C)");
-        // pretty_print_assert_vec(cpu_flags_out[2], 1'b1, "Negative Flag (N)");
-        // $display("NOTE: Flag verification requires Flags Register and update_flags logic. Specify LDA/LDB flag effect.");
-
-
+        //    - Carry Flag (C) = 0 
+        //    - Negative Flag (N) = 0
+        pretty_print_assert_vec(out_flag_zero, 1'b0, "Zero Flag (Z) after LDB");
+        pretty_print_assert_vec(out_flag_carry, 1'b0, "Carry Flag (C) after LDB");
+        pretty_print_assert_vec(out_flag_negative, 1'b0, "Negative Flag (N) after LDB");
+        
         // 5. Check RAM[0xD]: Should contain 3 (0x03) from the second STA
         pretty_print_assert_vec(uut.u_ram.mem[13], 8'h03, "RAM[0xD]");
 

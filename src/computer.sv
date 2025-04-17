@@ -131,6 +131,7 @@ module computer (
         if (load_sets_zn) begin
             Z_in = load_data_is_zero;
             N_in = load_data_is_negative;
+            C_in = 1'b0; // Carry flag is not set for LOAD operations
         end
     end
 
