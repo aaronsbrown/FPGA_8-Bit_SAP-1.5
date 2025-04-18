@@ -4,7 +4,7 @@ import arch_defs_pkg::*;
 
 module computer_tb;
   
-  localparam string HEX_FILE = "../fixture/prg_count_up_down.hex";
+  localparam string HEX_FILE = "../fixture/prg_mult.hex";
 
   reg clk;
   reg reset;
@@ -36,7 +36,7 @@ module computer_tb;
     reset_and_wait(0);
     run_until_halt(20000);
 
-    $display("\033[0;32m prg_count_up_down.hex completed successfully.\033[0m");
+    $display("\033[0;32m prg_mult.hex completed successfully.\033[0m");
     $finish;
   end
 
