@@ -41,9 +41,9 @@ module computer (
     // ================= BUS INTERFACE and 'bus staging' registers ==================
     // ==============================================================================
     logic [DATA_WIDTH-1:0] bus;
-    logic [DATA_WIDTH-1:0] o_out, a_out, b_out, alu_out, ram_out, counter_out, memory_address_out;
-    logic [FLAG_COUNT-1:0] flags_out;
-
+    logic [DATA_WIDTH-1:0] o_out, a_out, b_out, alu_out, ram_out;
+    logic [DATA_WIDTH-1:0] counter_out, memory_address_out;
+    
     // Tri-state bus logic modeled using a priority multiplexer
     assign bus =    (oe_pc)     ? { {(DATA_WIDTH-ADDR_WIDTH){1'b0} }, counter_out } :
                     (oe_ram)    ? ram_out :
@@ -108,6 +108,16 @@ module computer (
         .operand(operand)
     );
 
+    // IMPORTANT: Synthesis Optimization Note (Yosys/synth_ice40)
+    // Added (* keep *) attribute below because default synthesis optimization
+    // was observed to incorrectly alter or remove the flags register logic
+    // The (* keep *) prevents Yosys from over-optimizing
+    // this critical state-holding element, ensuring correct hardware behavior
+    // across different program complexities. The root cause appears to be
+    // an optimization that misinterprets the usage scope of the flags when
+    // conditional jumps aren't the final instructions using them.
+    (* keep *) logic [FLAG_COUNT-1:0] flags_out;
+    
     // Flags register to hold the status flags
     // Z: Zero flag, C: Carry flag, N: Negative flag
     register_nbit #( .N(FLAG_COUNT) ) u_register_flags (
@@ -121,6 +131,7 @@ module computer (
     assign flag_carry_o = flags_out[1];
     assign flag_negative_o = flags_out[2];
 
+    
 
     // ================ MAIN COMPONENTS: ALU, CONTROL UNIT, RAM ================
     // =========================================================================
@@ -178,6 +189,7 @@ module computer (
     logic flag_alu_carry;
     logic flag_alu_negative;
 
+    // TODO this is bugged, opcode test is erroneous
     // Determine if the LOAD operation resulted in zero or negative
     logic load_data_is_zero, load_data_is_negative;
     assign load_data_is_zero = (opcode == (LDI || LDA || LDB ) ) ? 

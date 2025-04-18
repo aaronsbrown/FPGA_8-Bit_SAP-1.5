@@ -8,7 +8,7 @@ module top (
 );
     
     // Derive 20MHz clock from 100MHz input
-    wire clk_out;
+    wire clk_out, clk_div;
     wire pll_locked;
 
     pll u_pll (
@@ -25,7 +25,14 @@ module top (
     wire [7:0] output_value;
     assign led = output_value;
     
-    
+    // clock_divider #(
+    //     .DIV_FACTOR(200_000) // 20MHz clock from 100MHz input
+    // ) u_clk_div (
+    //     .clk_in(clk_out),
+    //     .reset(sys_reset),
+    //     .clk_out(clk_div)
+    // );
+
     computer u_computer (
         .clk(clk_out),
         .reset(sys_reset),
@@ -34,7 +41,6 @@ module top (
         .flag_carry_o(io_led[1]),
         .flag_negative_o(io_led[2])
     );
-    
 
     seg7_display u_display (
         .clk(clk_out),
