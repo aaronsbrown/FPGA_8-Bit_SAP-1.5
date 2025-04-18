@@ -9,8 +9,18 @@ module computer (
     output wire [DATA_WIDTH-1:0] out_val,
     output wire flag_zero_o,
     output wire flag_carry_o,
-    output wire flag_negative_o
+    output wire flag_negative_o,
+    output wire [DATA_WIDTH-1:0] debug_out_B,
+    output wire [DATA_WIDTH-1:0] debug_out_IR,
+    output wire [ADDR_WIDTH-1:0] debug_out_PC
 );
+    
+    // ===================== DEBUG SIGNALS =================
+    // =====================================================
+    assign debug_out_B = b_out;
+    assign debug_out_IR = { opcode, operand };
+    assign debug_out_PC = counter_out;
+
     
     // ===================== MICROCODE STRUCTURAL DEFINITION ==============
     // ====================================================================
@@ -189,17 +199,39 @@ module computer (
     logic flag_alu_carry;
     logic flag_alu_negative;
 
-    // TODO this is bugged, opcode test is erroneous
     // Determine if the LOAD operation resulted in zero or negative
     logic load_data_is_zero, load_data_is_negative;
-    assign load_data_is_zero = (opcode == (LDI || LDA || LDB ) ) ? 
-                                          ( load_a && ( operand == { OPERAND_WIDTH{1'b0} }) ) :
-                                          ( ( load_a || load_b ) && ( bus == { DATA_WIDTH{1'b0} }) );
-    
-    assign load_data_is_negative = (opcode == (LDI || LDA || LDB ) ) ? 
-                                              ( load_a && operand[OPERAND_WIDTH - 1] ) :
-                                              ( ( load_a || load_b ) && ( bus[DATA_WIDTH - 1] ) );
-    
+    always_comb begin
+        load_data_is_zero = 1'b0;
+        load_data_is_negative = 1'b0;
+
+        if (load_sets_zn) begin
+            // We know we executing an operation that sets the flags
+            unique case (opcode)
+                LDI: begin
+                    // LDI sets the flags based on the operand
+                    load_data_is_zero = ( operand == {OPERAND_WIDTH{1'b0}} );
+                    load_data_is_negative = operand[OPERAND_WIDTH - 1];
+                end
+                LDA: begin
+                    // LDA sets the flags based on the bus
+                    load_data_is_zero = ( bus == {DATA_WIDTH{1'b0}} );
+                    load_data_is_negative = bus[DATA_WIDTH - 1];
+                end
+                LDB: begin
+                    // LDB sets the flags based on the bus
+                    load_data_is_zero = ( bus == {DATA_WIDTH{1'b0}} ) ;
+                    load_data_is_negative = bus[DATA_WIDTH - 1];
+                end
+                default: begin
+                    load_data_is_zero = 1'b0;
+                    load_data_is_negative = 1'b0;
+                end
+            endcase
+        end
+    end
+
+
     // Determine if flags should be set based on ALU op or LDI/LDA/LDB
     logic Z_in, N_in, C_in;
     always_comb begin
